@@ -1,0 +1,3782 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>tanks</title>
+		<meta name="viewport" content="width=device-width;initial-scale=1.0" />
+		<meta name="description" content="this game better take off" />
+		<style>
+			*
+			{
+				margin: 0;
+			}
+			html,body
+			{
+				height: 100%;
+				overflow: hidden;
+			}
+			body
+			{
+				font-family: sans-serif;
+				font-size:13.5px;
+				background: gray;
+			}
+			body.dark{background:black;}
+			h1,h2,h3
+			{
+				font-weight: 900;
+				letter-spacing:-2px;
+			}
+			.progressbar
+			{
+				padding: 5px 20px;
+				background: #151515;
+				font-weight: 900;
+				letter-spacing: -1px;
+				border-radius: 20px;
+				position: relative;
+				width: 200px;
+				color: white;
+				text-shadow: 0 0 3px black;
+			}
+			.progressbar div
+			{
+				background: orange;
+				position:absolute;
+				width:80%;
+				height:80%;
+				top:3px;
+				left:3px;
+				border-radius:20px;
+			}
+			.progressbar span
+			{
+				position:sticky;
+				z-index:100;
+			}
+			.rankbar
+			{
+				margin-top: 2px;
+				width: 300px;
+				text-transform: capitalize;
+			}
+			.scorebar
+			{
+				font-size: 12px;
+				background: #151515;
+			}
+			.scorebar div
+			{
+				background: #404040;
+			}
+			.overlay
+			{
+				position:absolute;
+				background: rgba(0,0,0,0.25);
+				left:0;
+				top:0;
+				width:100%;
+				height:100%;
+				display:flex;
+				justify-content:center;
+				align-items:center;
+				z-index:700;
+			}
+			body.fullcontrast .overlay{
+				background:white;
+			}
+			body.dark .overlay{color:white;}
+			body.dark.fullcontrast .overlay{
+				background:black;
+			}
+			input,li,select,textarea
+			{
+				font-family:inherit;
+				font-size:inherit;
+				padding:10px;
+				border:1px solid;
+			}
+			option{font-size:15px;}
+			.thankyou
+			{
+				text-shadow:none;
+				opacity:0.1;
+				user-select:none;
+				text-transform:uppercase;
+				max-width:500px;
+				font-size:200px;
+				line-height:150px;
+				letter-spacing:-25px;
+			}
+			ol{list-style-type:none;padding:0;user-select:none;display:flex;flex-direction:column;gap:10px;}
+			li:hover{
+				transform:translateY(-4px);
+				box-shadow: 2px 2px 2px 2px black;
+				cursor: pointer;
+			}
+			li:active{
+				transform:translateY(4px);
+				box-shadow:none;
+				border:0;
+			}
+			#main>div {
+				font-size:30px;text-shadow:0 0 50px white;letter-spacing:-1px;padding-top:200px;width:385px;
+			}
+			#main {
+				display:flex;
+				position:relative;
+			}
+			.todo li {
+				border:0;
+				padding:10px 0;
+				display:flex;
+				gap:10px;
+			}
+			.todo li p
+			{
+				flex:1;
+			}
+			li input{width:30px;height:30px;}
+			.todo li+li
+			{
+				border-top:2px solid !important;
+			}
+			#main>div:not(.show){display:none}
+			#main:has([name="todo"].show){position:absolute;}
+			.overlay:has([name="todo"].show)>h1{max-width:none;text-align:center;display:none;}
+			#main div>h1
+			{text-shadow:none;font-size:120px;letter-spacing:-10px;
+			}
+			#main div>ol
+			{
+				max-height:700px;
+				overflow-y:auto;
+			}
+			.overlay:has([name="todo"].show){}
+			.upgrades{padding: 20px;display:flex;gap:5px;flex-direction:column;}
+			.upgrades .progressbar{padding:3px;display:flex;width:auto;background:#151515;border-radius:8px;}
+			.upgrades .progressbar>div>div{position:unset;height:9px;padding:0;margin-top:6px;border-radius:0;width:18px;background:black;}
+			.upgrades .progressbar>div{display:flex;gap:2px;padding:0;width:auto;background:none;position:unset;}
+			.upgrades .progressbar>div>div:first-child{border-radius:10px 0px 0px 10px;}
+			.upgrades .progressbar button{border-radius:0px 6px 6px 0px;background:#151515;color:black;border:0;padding:0;width:50px;font-weight:900;}
+			.upgrades small {font-weight:900;text-transform:uppercase;font-size:9px;position:absolute;z-index:100;color:white;margin-left:10px;margin-top:-2px;}
+			.upgrades .progressbar button:not(:disabled):hover {
+				filter:brightness(1.7);
+				cursor:pointer;
+				transform:translateY(-2px);
+			}
+			.upgrades .progressbar button:not(:disabled):active {
+				transform:translateY(2px);
+			}
+			.upgrades h1 {
+				position: absolute;
+				right: -5px;
+				top: -5px;
+				transform: rotate(-30deg);
+				letter-spacing: -4px;
+				font-size:25px;
+			}
+			.upgrades {
+				position:relative;
+				left:-220px;
+				transition-duration:1s;
+			}
+			.upgrades.show {
+				left:0;
+			}
+			.top-gui-container
+			{
+				position:absolute;
+				top:0;
+				display:flex;
+				justify-content:space-between;
+				width:100%;
+				padding:20px;
+				box-sizing:border-box;
+			}
+			.notifs {
+				max-width: 300px;
+				transition-duration: 0.2s;
+				display:flex;
+				flex-direction:column;
+				gap:3px;
+				align-items:center;
+			}
+			.notifs > div,.killfeed>div{
+				padding:2.5px 20px;
+				background: #151515;
+				color: white;
+				border-radius: 20px;
+				font-weight:900;
+				letter-spacing:-1px;
+				font-size:smaller;
+				text-transform:uppercase;
+				backdrop-filter:opacity(0.5);
+			}
+			.killfeed>div {
+				display:flex;
+				gap:5px;
+				align-items:flex-start;
+				border-radius: 8px;
+			}
+			.killfeed>div>div {
+				display:flex;
+				flex-direction:column;
+			}
+			.killfeed{
+				display:flex;
+				gap:2px;
+				flex-direction:column;
+				align-items:flex-end;
+			}
+			.killfeed>div.highlight{
+				background:white;
+				color:black;
+			}
+			.chat-commands{
+				margin-left:20px;
+			}
+			.chat-commands li{
+				border:0;
+				padding:0;
+			}
+			.bottom-left-gui-container
+			{
+				flex-direction: column;
+				align-items:flex-start;
+			}
+			.chat-commands ol {
+				gap:1px;
+				background: rgb(15,15,15,0.75);
+				color: black;
+				padding:10px;
+				color:white;
+				font-size:smaller;
+				font-weight:900;
+				border-radius:8px;
+			}
+			tag{
+				background:white;
+				padding:0 10px;
+				color:black;
+				margin-left:5px;
+				font-size:smaller;
+				border-radius:8px;
+				display:inline-block;
+			}
+			.highlight tag{background:black;color:white;}
+			.class-upgrades>*{
+				width:100px;
+				height:100px;
+				background-color:rgba(0,0,0,0.5);
+			}
+			.class-upgrades{
+				display:flex;flex-wrap:wrap;max-width:300px;
+			}
+			.class-upgrades canvas{
+			width:100%;height:100%;object-fit:cover;}
+			.class-upgrades>div:hover{
+				filter:brightness(1.1);
+				cursor:pointer;
+			}
+			.killfeed canvas{
+				width:30px;
+				height:30px;
+				object-fit:cover;
+			}
+			.codeeditor{
+				background:black;
+				position:absolute;
+				display:flex;
+				flex-direction:column;
+				z-index:1000;
+				font-family:Courier New;
+				color:white;
+				width:500px;
+				height:300px;
+				font-size:11.5px;
+			}
+			.codeeditor textarea{
+				background:none;
+				width:100%;
+				height:100%;
+				font-family:inherit;
+				font-size:inherit;
+				color:inherit;
+				padding:0;
+				border:0;
+				outline:0;
+				resize:none;
+			}
+			.codeeditor small{background:inherit;font-family:sans-serif;padding:2px;display:flex;align-items:flex-start;filter:invert(1);}
+			.codeeditor li{padding:2px 15px;list-style-type:none;}
+			.notifs{z-index:1000;}
+			[name="modeditor"] textarea{
+				width:600px;
+				border:1px solid black;
+				background:white;
+				font-family:inherit;
+				font-size:inherit;
+				resize:none;
+				height:150px;
+				font-size:smaller;
+			}
+			.codeeditor.maximized{
+				top:0px!important;
+				left:0px!important;
+				width:100%;
+				height:100%;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas></canvas>
+		<div class="overlay" style="display:none;">
+			<h1 class="thankyou">thank you m28</h1>
+			<div id = "main" style="scale:0.5;">
+				<div name="menu"class="show">
+					<ol style="margin-top:40px;flex-direction:row;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.refreshGames();" class="exempt"><p>↺ refresh</p></li>
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('host-control');" class="exempt"><p>create game</p></li>
+					</ol>
+					<h1>tanks</h1>
+					<p>choose a game to join or make your own</p>
+					<ol style="margin-top:40px;" id="games">
+					</ol>
+				</div>
+				<div name="splash">
+					<small style="margin-bottom:40px;display:block;opacity:0.5;" id = "tips">Tip: Use "V" on your keyboard to use chat commands to quickly chat</small>
+					<p>this is the tale of...</p>
+					<input id="sussy">
+					<small>(Press ENTER to spawn)</small>
+					<ol style="margin-top:40px;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('todo');"><p>upcoming changes</p></li>
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('settings');"><p>settings</p></li>
+						<!--<li><p>achievements</p></li>-->
+						<br style="margin-top:30px;">
+						<li onclick="isSpectating=true;let v=null;v=document.body.addEventListener('keydown',(e)=>{if(e.keyCode==27){isSpectating=false;document.body.removeEventListener('keydown',v);}});"><p>spectate</p></li>
+						<br style="margin-top:30px;">
+						<li id="game.leave" onclick="let g=document.getElementById('sussy').sussyClientBruh;g.game.socket.emit('danjaye_leave',true);g.game.connected=false;g.game.tanks.forEach((t,i)=>{if(i>0)t.destroy();});g.showSplash();"><p>leave game</p></li>
+						<li id="game.hostmenu" onclick="let g=document.getElementById('sussy').sussyClientBruh;g.setMenu('host-control');"><p>host settings</p></li>
+					</ol>
+				</div>
+				<div name="todo"style="width: 999px;padding-top:0;">
+					<ol style="margin-top:40px;align-items:flex-start;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.showSplash();"><p>← go back</p></li>
+					</ol>
+					<ol style="margin-top:40px;flex-direction:column-reverse;gap: 30px;font-size: 35px;" class="todo">
+						<li><input type="checkbox" disabled><p>add zooming</p></li>
+						<li><input type="checkbox" disabled><p>add buttons to pick next tank classes</p></li>
+					</ol>
+				</div>
+				<div name="settings">
+					<ol style="margin-top:40px;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.showSplash();"><p>← go back</p></li>
+					</ol>
+					<h1>settings</h1>
+					<ol style="margin-top:40px;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('theme');"><p>set theme</p></li>
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('mods');"><p>mods</p></li>
+						<li id="preference.show_health_all_tanks" style="display:flex;gap:10px;" onclick="let i =this.querySelector('input');i.checked=!i.checked;"><input type="checkbox"><p>show healthbar on all objects</p></li>
+						<li id="preference.fullcontrast" style="display:flex;gap:10px;" onclick="let i =this.querySelector('input');i.checked=!i.checked;" onchecked="document.body.classList.toggle('fullcontrast');"><input type="checkbox"><p>high contrast when available</p></li>
+						<li id="preference.show_data_all_tanks" style="display:flex;gap:10px;" onclick="let i =this.querySelector('input');i.checked=!i.checked;"><input type="checkbox"><p>show more data on all objects</p></li>
+					</ol>
+				</div>
+				<div name="theme">
+					<ol style="margin-top:40px;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('settings');"><p>← go back</p></li>
+					</ol>
+					<h1>theme</h1>
+					<ol style="margin-top:40px;">
+						<li onchecked="document.body.classList.remove('dark');" style="display:flex;gap:10px;" id="select.theme.light"><input type="checkbox"><p>light</p></li>
+						<li onchecked="document.body.classList.add('dark');" style="display:flex;gap:10px;" id="select.theme.dark"><input type="checkbox"><p>dark</p></li>
+						<li><p>custom...</p></li>
+					</ol>
+				</div>
+				<div name="host-control">
+					<ol style="margin-top:40px;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.showSplash();"><p>← go back</p></li>
+					</ol>
+					<h1 style="line-height: 70px;margin: 50px 0;">host control</h1>
+					<ol style="margin-top:40px;">
+						<small>GAME PRIVACY</small>
+						<li id="game.privacy.private" onclick="let i =this.querySelector('input');i.checked=!i.checked;if(i.checked){document.getElementById('game.privacy.public').querySelector('input').checked=false;}" onchecked="document.body.classList.remove('dark');" style="display:flex;gap:10px;"><input type="checkbox"><p style="flex:1;">private<small style='display:block;'>This option will use a join code.</small></p></li>
+						<li id="game.privacy.public" onclick="let i =this.querySelector('input');i.checked=!i.checked;if(i.checked){document.getElementById('game.privacy.private').querySelector('input').checked=false;}" onchecked="document.body.classList.add('dark');" style="display:flex;gap:10px;"><input type="checkbox" checked><p>public</p></li>
+						<small>No data will be sent to the server while there are no other players in your game.</small>
+						<small>GAMEMODE</small>
+						<li id="game.mode.ffa" onclick="let i =this.querySelector('input');i.checked=!i.checked;if(i.checked){['domination','_2_teams','_4_teams','maze'].forEach((z)=>{document.getElementById('game.mode.'+z).querySelector('input').checked=false;});}" onchecked="document.body.classList.add('dark');" style="display:flex;gap:10px;"><input type="checkbox" checked><p>ffa<small style='display:block;'>free-for-all; no bases, just bullets.</small></p></li>
+						<li id="game.mode.domination" onclick="let i =this.querySelector('input');i.checked=!i.checked;if(i.checked){['ffa','_2_teams','_4_teams','maze'].forEach((z)=>{document.getElementById('game.mode.'+z).querySelector('input').checked=false;});}" onchecked="document.body.classList.add('dark');" style="display:flex;gap:10px;"><input type="checkbox"><p style="flex:1;">domination<small style='display:block;'>maintain control of four dominators with your team to win.</small></p></li>
+						<li id="game.mode._2_teams" onclick="let i =this.querySelector('input');i.checked=!i.checked;if(i.checked){['ffa','domination','_4_teams','maze'].forEach((z)=>{document.getElementById('game.mode.'+z).querySelector('input').checked=false;});}" onchecked="document.body.classList.add('dark');" style="display:flex;gap:10px;"><input type="checkbox"><p>2 teams<small style='display:block;'>fight against another team.</small></p></li>
+						<li id="game.mode._4_teams" onclick="let i =this.querySelector('input');i.checked=!i.checked;if(i.checked){['ffa','domination','_2_teams','maze'].forEach((z)=>{document.getElementById('game.mode.'+z).querySelector('input').checked=false;});}" onchecked="document.body.classList.add('dark');" style="display:flex;gap:10px;"><input type="checkbox"><p>4 teams<small style='display:block;'>fight against three other teams.</small></p></li>
+						<li id="game.mode.maze" onclick="let i =this.querySelector('input');i.checked=!i.checked;if(i.checked){['ffa','domination','_2_teams','_4_teams'].forEach((z)=>{document.getElementById('game.mode.'+z).querySelector('input').checked=false;});}" onchecked="document.body.classList.add('dark');" style="display:flex;gap:10px;"><input type="checkbox"><p style='flex:1;'>maze<small style='display:block;'>navigate a maze and fight to the death. notorious for teamers</small></p></li>
+						<small>GAME RULES</small>
+						<li id ="game.rule.spawn_polygons"style="display:flex;gap:10px;"onclick="let i =this.querySelector('input');i.checked=!i.checked;"><input type="checkbox" checked><p>spawn shapes</p></li>
+						<li id ="game.rule.spawn_bosses"style="display:flex;gap:10px;"onclick="let i =this.querySelector('input');i.checked=!i.checked;"><input type="checkbox" checked><p>spawn bosses</p></li>
+						<li id="game.rule.verify_data" style="display:flex;gap:10px;"onclick="let i =this.querySelector('input');i.checked=!i.checked;"><input type="checkbox" checked><p style="flex:1;">verify player data<small style='display:block;'>This option is essentially a rudimentary anti-cheat.</small></p></li>
+						<small>LEVEL CAP</small>
+						<input id="game.levelcap" value="60">
+						<small>Changing this value will not remove levels from tanks that are already above the cap.</small>
+						<small>BOTS</small>
+						<input id="game.bots" value="0" type="number">
+						<li style="text-align:center;" id="game.update"><p>Create/update server</p></li>
+						<small>Pressing this button will instantly make the changes on this page! To exit without saving, press "Go back" at the top!</small>
+						<small>DANGER ZONE</small>
+						<li style="text-align:center;" id="game.close"><p>Close server</p></li>
+						<small>This option will close the arena. It differs from leaving in that if you leave, the game ownership is delegated to another player, while this option guarantees the server will close.</small>
+					</ol>
+				</div>
+				<div name="mods" style="padding-top:0;">
+					<ol style="margin-top:40px;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('settings');"><p>← go back</p></li>
+					</ol>
+					<h1 style="padding-top:10px;line-height: 71px;margin: 46px 0;">game mods</h1>
+					<small style="padding:5px;background:black;color:white;display:block;">changes on this page require a refresh.</small>
+					<ol style="margin-top:40px;max-height:500px;width:600px;" id="modsholder-container">
+						<li onchecked="" style="display:flex;gap:10px;" id="preference.mod.sussy" onclick="let i =this.querySelector('input');i.checked=!i.checked;"><input type="checkbox"><p style="flex:1;">move mods item to main menu<small style="display:block;">Mod for developers for ease of access</small></p></li>
+					</ol>
+					<ol style="margin-top:40px;">
+						<li id="game.mods.new"onclick="let g=document.getElementById('sussy').sussyClientBruh;(async()=>{let r=await g.prompt('Enter the name of the mod','mod name',['<p></p>','<input>'],[()=>{},(i)=>{let d=document.createElement('small');d.style='background:black;color:white;padding:5px;';let p=i.parentElement;i.oninput=()=>{ if(!i.value.match(/^[a-zA-Z0-9-. +&,'@#]{1,32}$/)) { p.insertBefore(d,i.previousElementSibling);d.innerText='This mod will not be uploadable to internet mods due to its name!'; } else if(game.mods.find((mza)=>mza.name==i.value)) { p.insertBefore(d,i.previousElementSibling);d.innerText='A mod with this name already exists! Pressing continue will edit it instead!'; } else { d.remove(); } }}]);if(r!=null){if(!game.mods.find((m)=>m.name==r)){game.addMod(r,()=>{},{description:''});}g.setMenu('modeditor',r);}})();"><p>new...</p></li>
+						<li id="game.mods.edit"onclick="(async()=>{ await game.gui.prompt('Choose a mod to edit','edit a mod',['<p></p>'],[(z)=>{ let p=z.parentElement;game.mods.toReversed().forEach((m)=>{ let me=document.createElement('li');me.innerHTML='<p></p>';me.querySelector('p').innerText=m.name;p.appendChild(me);me.onclick=()=>{ game.gui.setMenu('modeditor',m.name); } }); }]); })();"><p>edit...</p></li>
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('internetmods');"><p>view internet mods</p></li>
+					</ol>
+				</div>
+				<div name="modeditor">
+					<ol style="margin-top:40px;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('mods');"><p>← go back</p></li>
+					</ol>
+					<h1 style="line-height: 71px;margin: 46px 0;">edit a mod</h1>
+					<p>mod name</p>
+					<input>
+					<p>mod description</p>
+					<textarea></textarea>
+					<ol style="margin-top:40px;">
+						<li id="modeditor.edit"><p>edit code</p></li>
+						<li id="modeditor.create"style="background:white;filter:invert(1);"><p>update</p></li>
+						<li id="modeditor.delete"><p>delete</p></li>
+						<li id="modeditor.publish"><p>publish</p></li>
+					</ol>
+				</div>
+				<div name="internetmods" style="padding-top:0;">
+					<ol style="margin-top:40px;flex-direction:row;">
+						<li onclick="document.getElementById('sussy').sussyClientBruh.setMenu('mods');"><p>← go back</p></li>
+						<li onclick="document.getElementById('sussy').sussyClientBruh.refreshInternetMods();"><p>↺ refresh</p></li>
+					</ol>
+					<h1 style="padding-top:10px;line-height: 71px;margin: 46px 0;">internet mods</h1>
+					<ol style="margin-top:40px;max-height:500px;width:600px;" id="modsholder-container"></ol>
+					<ol style="margin-top:40px;">
+						<li id="game.internetmods.report"onclick="document.getElementById('sussy').sussyClientBruh.setMenu('reportmod');"><p>vote for a warning to be posted...</p></li>
+						<li id="game.internetmods.download"><p>download selected</p></li>
+					</ol>
+				</div>
+				<div name="prompt" style="padding-top:0;">
+					<ol style="margin-top:40px;flex-direction:row;">
+						<li id="game.gui.prompt.cancel"><p>← go back</p></li>
+					</ol>
+					<h1 style="padding-top:10px;line-height: 71px;margin: 46px 0;">enter a name</h1>
+					<ol style="margin-top:40px;max-height:500px;">
+						<p>NAME</p>
+						<input>
+					</ol>
+					<ol style="margin-top:40px;">
+						<li id="game.gui.prompt.ok"><p>continue</p></li>
+					</ol>
+				</div>
+			</div>
+		</div>
+		<div class="codeeditor" style="top:0;left:0;">
+			<small><span>CODE EDITOR</span><li style="margin-left:auto;">□</li><li>x</li></small>
+			<textarea></textarea>
+		</div>
+		<script src="/socket.io/socket.io.min.js"></script>
+		<script>
+			const pSBC=(p,c0,c1,l)=>{
+				//if(document.body.classList.contains("dark")) p = -p*0.05;
+				let r,g,b,P,f,t,h,m=Math.round,a=typeof(c1)=="string";
+				if(typeof(p)!="number"||p<-1||p>1||typeof(c0)!="string"||(c0[0]!='r'&&c0[0]!='#')||(c1&&!a))return null;
+				h=c0.length>9,h=a?c1.length>9?true:c1=="c"?!h:false:h,f=pSBC.pSBCr(c0),P=p<0,t=c1&&c1!="c"?pSBC.pSBCr(c1):P?{r:0,g:0,b:0,a:-1}:{r:255,g:255,b:255,a:-1},p=P?p*-1:p,P=1-p;
+				if(!f||!t)return null;
+				if(l)r=m(P*f.r+p*t.r),g=m(P*f.g+p*t.g),b=m(P*f.b+p*t.b);
+				else r=m((P*f.r**2+p*t.r**2)**0.5),g=m((P*f.g**2+p*t.g**2)**0.5),b=m((P*f.b**2+p*t.b**2)**0.5);
+				a=f.a,t=t.a,f=a>=0||t>=0,a=f?a<0?t:t<0?a:a*P+t*p:0;
+				if(h)return"rgb"+(f?"a(":"(")+r+","+g+","+b+(f?","+m(a*1000)/1000:"")+")";
+				else return"#"+(4294967296+r*16777216+g*65536+b*256+(f?m(a*255):0)).toString(16).slice(1,f?undefined:-2)
+			}
+
+			pSBC.pSBCr=(d)=>{
+				const i=parseInt;
+				let n=d.length,x={};
+				if(n>9){
+					const [r, g, b, a] = (d = d.split(','));
+						n = d.length;
+					if(n<3||n>4)return null;
+					x.r=i(r[3]=="a"?r.slice(5):r.slice(4)),x.g=i(g),x.b=i(b),x.a=a?parseFloat(a):-1
+				}else{
+					if(n==8||n==6||n<4)return null;
+					if(n<6)d="#"+d[1]+d[1]+d[2]+d[2]+d[3]+d[3]+(n>4?d[4]+d[4]:"");
+					d=i(d.slice(1),16);
+					if(n==9||n==5)x.r=d>>24&255,x.g=d>>16&255,x.b=d>>8&255,x.a=Math.round((d&255)/0.255)/1000;
+					else x.r=d>>16,x.g=d>>8&255,x.b=d&255,x.a=-1
+				}return x
+			};
+			class DanjayeHTMLTemplate {
+				constructor(e,f,DANJAYE){
+					this.referenceElement=e;
+					this.f=f;
+					this.DANJAYE=DANJAYE;
+				}
+				create(d){
+					let c=this.referenceElement.cloneNode(true);
+					this.f.call(c,d,this.DANJAYE);
+					return c;
+				}
+			}
+			class Barrel {
+				constructor(width,length,rotation,firePriority=0,owner,firerate,horizOffset=0,recoil=2,bullet=null,bc=Bullet,maxDrones=1,spread=null,funnelAngle=null,vertOffset=0,reloadBeforeFiringOtherBarrels=true,canControlDrones=true) {
+					this.width = width;
+					this.length = length;
+					this.rotation = rotation;
+					this.firePriority = firePriority;
+					this.owner = owner;
+					this.lastFireTime = -999;
+					this.firerate = firerate;
+					this.horizOffset = horizOffset;
+					this.recoil = recoil;
+					this.bullet = bullet || {speed:7,damage:2,hp:1,mass:10};
+					this.bulletConstructor = bc;
+					this.maxDrones = maxDrones;
+					this.drones = [];
+					this.spread = spread;
+					this.funnelAngle = funnelAngle;
+					if(this.funnelAngle==null&&(spread!=null||bc!=Bullet)) this.funnelAngle = 0.3;
+					this.vertOffset = vertOffset;
+					this.reloadBeforeFiringOtherBarrels = reloadBeforeFiringOtherBarrels;
+					this.canControlDrones = canControlDrones;
+				}
+				
+				setOwner() {
+				
+				}
+				
+				getFirerate() {
+					return this.firerate * (this.owner instanceof LevelingTank ? (1.3 - (0.6/7 * this.owner.getUpgrade("tank_reload").value)) : 1);
+				}
+				
+				canFire() {
+					for(let d of this.drones) {
+						if(!this.owner.game.tanks.includes(d)) {
+							this.drones.splice(this.drones.indexOf(d),1);
+						}
+					}
+					return new Date().getTime()-this.lastFireTime>=this.getFirerate()*1000 && (!(this.bulletConstructor==Drone) || this.drones.length < this.maxDrones);
+				}
+				
+				fire() {
+					if(!this.canFire()) return;
+					this.lastFireTime = new Date().getTime();
+					let m = 1;
+					let bd = 1;
+					let bhp = 1;
+					let bs = 1;
+					let bm = 1;
+					if(this.owner instanceof LevelingTank) {
+						m += 1*this.owner.visualLevel/45;
+						bd += -0.7 + this.owner.getUpgrade("bullet_damage").value * 0.21;
+						bhp += -0.7 + this.owner.getUpgrade("bullet_hp").value * 0.21;
+						bs += this.owner.getUpgrade("bullet_speed").value * 0.1;
+						bm += -0.7 + (bhp - 1)/5;
+					}
+					let bullet = new this.bulletConstructor(this.bullet.hp*m*bhp,((this.bullet.size!=null?this.bullet.size:this.width/2)*this.owner.size/20)*(1+(this.bulletConstructor==Drone?-0.5:0)),"bullet",1,this.owner.game,this.owner.team,this.bullet.speed*bs,this.owner,this.bullet.damage*m*bd,this.bullet.mass*m*bm);
+					if(this.owner.game.flags.includes("local_player_control")) bullet.addFlag("local_player_control");
+					bullet.owner=this.owner;
+					bullet.controllable = this.canControlDrones;
+					if(this.bullet.body) bullet.render = this.bullet.body;
+					if(this.bullet.barrels) { this.bullet.barrels.forEach((b)=>{let z=b();z.owner=bullet;bullet.barrels.push(z);}); }
+					this.drones.push(bullet);
+					if(this.bullet.damageRate) bullet.damageRate = this.bullet.damageRate;
+					if(this.bullet.lifetime) bullet.lifetime = this.bullet.lifetime;
+					if(this.bullet.tankClass!=null) bullet.setClass(this.bullet.tankClass);
+					if(this.bullet.behaviorTick!=null) bullet.behaviorTick = this.bullet.behaviorTick;
+					bullet.x = this.owner.x;
+					bullet.y = this.owner.y;
+					bullet.direction = this.owner.direction + this.rotation + (this.spread!=null?this.spread-Math.random()*this.spread*2:0);
+					bullet.move(this.horizOffset*this.owner.size/15,bullet.direction+this.rotation+90);
+					bullet.velocity.x = this.owner.velocity.x;
+					bullet.velocity.y = this.owner.velocity.y;
+					bullet.push(bullet.speed,bullet.direction);
+					this.owner.push(-this.recoil,bullet.direction);
+					game.addTank(bullet);
+				}
+				
+				render(ctx) {
+					let fireAnimFrame = (new Date().getTime()-this.lastFireTime) / 1000;
+					if(fireAnimFrame>0.4) fireAnimFrame = 0.4;
+					fireAnimFrame = fireAnimFrame / 0.4;
+					ctx.beginPath();
+					ctx.fillStyle = "#e2e2e2";
+					ctx.strokeStyle = pSBC(-0.75,ctx.fillStyle);
+					ctx.translate((ctx.canvas.width/2)+this.owner.x-this.owner.game.x,(ctx.canvas.height/2)+this.owner.game.y-this.owner.y);
+					ctx.rotate(((this.rotation + this.owner.direction - 90) * Math.PI) / 180);
+					if(this.funnelAngle!=null) {
+						let w = this.width*this.owner.size/20;
+						let l = this.length*this.owner.size/20-1/fireAnimFrame;
+						ctx.moveTo(0+this.vertOffset*this.owner.size/15,-w/2+(w*this.funnelAngle)+this.horizOffset*this.owner.size/15);
+						ctx.lineTo(l+this.vertOffset*this.owner.size/15,-w/2+this.horizOffset*this.owner.size/15);
+						ctx.lineTo(l+this.vertOffset*this.owner.size/15,w/2+this.horizOffset*this.owner.size/15);
+						ctx.lineTo(0+this.vertOffset*this.owner.size/15,w/2-(w*this.funnelAngle)+this.horizOffset*this.owner.size/15);
+						ctx.closePath();
+					}
+					else {
+						ctx.rect(0+this.vertOffset*this.owner.size/15,-((this.width*(this.owner.size/20))/2)+this.horizOffset*this.owner.size/15,this.length*this.owner.size/20-1/fireAnimFrame,this.width*this.owner.size/20);
+					}
+					ctx.translate(-(ctx.canvas.width/2)+this.owner.x-this.owner.game.x,-(ctx.canvas.height/2)+this.owner.game.y-this.owner.y);
+					ctx.stroke();
+					ctx.fill();
+					ctx.resetTransform();
+				}
+				
+				tick() {
+				
+				}
+			}
+			
+			class AutoBarrel extends Barrel {
+				constructor(width,length,rotation,firePriority,owner,firerate,horizOffset,recoil,bullet,bc,maxDrones,spread,funnelAngle,vertOffset,reloadBeforeFiringOtherBarrels,canControlDrones) {
+					super(width,length,rotation,firePriority,owner,firerate,horizOffset,recoil,bullet,bc,maxDrones,spread,funnelAngle,vertOffset,reloadBeforeFiringOtherBarrels,canControlDrones);
+					this.direction=0;
+				}
+				
+				tick() {
+					
+				}
+				
+				render(ctx) {
+					super.render(ctx);
+					ctx.beginPath();
+					ctx.translate((ctx.canvas.width/2)+this.owner.x-this.owner.game.x,(ctx.canvas.height/2)+this.owner.game.y-this.owner.y);
+					ctx.rotate(((this.rotation + this.owner.direction - 90) * Math.PI) / 180);
+					ctx.arc(this.vertOffset*this.owner.size/15,this.horizOffset*this.owner.size/15,(this.width/2)+3+(this.owner.size/2)-(15/2),0,2*Math.PI,false);
+					ctx.closePath();
+					ctx.translate(-(ctx.canvas.width/2)+this.owner.x-this.owner.game.x,-(ctx.canvas.height/2)+this.owner.game.y-this.owner.y);
+					ctx.stroke();
+					ctx.fill();
+					ctx.resetTransform();
+				}
+			}
+			
+			class DanjayeEventHolder {
+				constructor(parent) {
+					this.eventListeners={};
+				}
+				
+				registerEvent(name) {
+					if(!this.eventListeners[name]) this.eventListeners[name] = [];
+				}
+				
+				addEventListener(name,func) {
+					this.eventListeners[name].push(func);
+				}
+				
+				fireEvent(name,event) {
+					this.eventListeners[name].forEach((e)=>e.call(this,event));
+				}
+				
+				removeEventListener(name,func) {
+					let z=this.eventListeners[name].find((z)=>z==func);
+					if(!z) throw new Error("function not found in event listeners");
+					this.eventListeners[name].splice(this.eventListeners[name].indexOf(z),1);
+				}
+			}
+		
+			class Tank extends DanjayeEventHolder {
+				constructor(hp,size,name,lvl,game,team) {
+					super();
+					this.createdAt = new Date().getTime();
+					this.maxhp = hp;
+					this.hp = this.maxhp;
+					this.size = size;
+					this.name = name;
+					this.visualLevel = lvl;
+					this.x = 0;
+					this.y = 0;
+					this.velocity = {
+						x: 0,
+						y: 0
+					};
+					this.direction = 90;
+					this.lastDamageTime = -9999;
+					this.deathTime = -99999999999;
+					this.barrels = [];
+					this.game = game;
+					this.team = team;
+					this.flags = [];
+					this.damagers = new Map();
+					this.colliders = [];
+					this.canCollide = (tank)=>!(tank instanceof Bullet&&tank.team==this.team&&tank.team!=null)&&tank!=this&&(!tank.owner||tank.owner!=this)&&(!this.owner||this.owner!=tank);
+					this.mass = 10;
+					this.currentBarrel = 0;
+					this.lastVolleyTime = -999;
+					this.speed = 0.2;
+					this.damageRate = 500;
+					this.stationary = false;
+					this.xp = 0;
+					this.healingRate = 0.001;
+					this.timeToHeal = 10;
+					this.lastHealTime = -99;
+					this.bodyDamage = 1;
+					this.messages = [];
+					this.id=null;
+					this.registerEvent("damage");
+					this.registerEvent("beforedestroy");
+				}
+				
+				reset() {
+					this.body=new Tank().body;
+					this.barrels.forEach((b)=>{
+						b.drones.forEach((d)=>{
+							d.destroy();
+						});
+					});
+				}
+				
+				addBarrel(brl) {
+					this.barrels.push(brl);
+				}
+				
+				setMaxHP(amt) {
+					this.maxhp = amt;
+				}
+				
+				kill() {
+					this.deathTime = new Date().getTime();
+				}
+				
+				destroy() {
+					if(this.flags.includes("local_player_control")) {
+						this.game.socket.emit("danjaye_delete",this.id);
+					}
+					this.game.garbageCollection.push(this);
+				}
+				
+				addXP(xp) {
+					this.xp += xp;
+				}
+				
+				damage(amount,damager) {
+					if(this.hp<=0) return;
+					let time = new Date().getTime();
+					this.lastDamageTime = time;
+					this.damagers.set(damager,{ lastDamageTime: time, damage: amount, type: (damager.owner instanceof Tank?(damager instanceof Drone?game.damageTypes.drone:(damager instanceof Trap?game.damageTypes.trap:game.damageTypes.shoot)):game.damageTypes.ram) });
+					this.hp -= amount;
+					if(this.hp<0) {
+						this.hp = 0;
+					}
+					this.fireEvent("damage",{ damage: amount, damager: damager, type: this.damagers.get(damager).type.name });
+					if(this.hp==0) {
+						if(damager.owner instanceof Tank) {
+							game.killfeed(damager.owner,this); 
+							damager.owner.addXP(this.xp);
+						}
+						else {
+							game.killfeed(damager,this); 
+							damager.addXP(this.xp);
+						}
+					}
+					return true;
+				}
+				
+				push(speed,direction) {
+					this.velocity.x += Math.sin(direction*Math.PI/180) * speed;
+					this.velocity.y += Math.cos(direction*Math.PI/180) * speed;
+				}
+				
+				move(speed,direction) {
+					this.x += Math.sin(direction*Math.PI/180) * speed;
+					this.y += Math.cos(direction*Math.PI/180) * speed;
+				}
+				
+				canBeDamagedBy(tank) {
+					if(!this.damagers.has(tank)) this.damagers.set(tank,{ lastDamageTime: -9999, damage: 0, type: null });
+					return (tank.team!=this.team||tank.team==null)&&new Date().getTime()>this.damagers.get(tank).lastDamageTime+tank.damageRate;
+				}
+				
+				damageTick() {
+					if(this.hp==0) this.destroy();
+					for(let tank of this.colliders) {
+						if(this.canBeDamagedBy(tank)) {
+							this.damage(tank.bodyDamage,tank);
+						}
+					}
+				}
+				
+				setClass(c) {
+					this.reset();
+					this.class = c;
+					this.barrels = this.class(this).barrels;
+					if(Object.values(this.game.dominatorClasses).includes(c)) {
+						this.stationary = true;
+						let muzzle = this.class(this).muzzle;
+						this.addBarrel(new Barrel(muzzle!=null?muzzle.width:14,muzzle!=null?muzzle.length:25,0,99,this,2.2,0,0,{speed:10,damage:25,hp:50,mass:200},Bullet,null,null,-0.9));
+					}
+				}
+				
+				tick() {
+					this.collideWithWall();
+					this.collide();
+					if(this.flags.includes("local_player")) {
+						if(this.game.keyboard.pressed.includes(79)) this.destroy(); 
+						if(this.game.keyboard.pressed.includes(87)) this.velocity.y += this.speed;
+						if(this.game.keyboard.pressed.includes(65)) this.velocity.x -= this.speed;
+						if(this.game.keyboard.pressed.includes(83)) this.velocity.y -= this.speed;
+						if(this.game.keyboard.pressed.includes(68)) this.velocity.x += this.speed;
+						if(this.game.keyboard.pressed.includes(220)&&(this.lastClassChangeTime==null||new Date().getTime()>this.lastClassChangeTime+500)) {
+							this.lastClassChangeTime = new Date().getTime();
+							this.setClass(game.getRandomObjectValue(game.tankClasses));
+						}
+						if(this.game.keyboard.pressed.includes(75)) this.addXP(Math.ceil(this.requiredXPForNextLevel/10));
+					}
+					this.applyVelocity();
+					this.dissipateVelocity();
+					if(this.flags.includes("local_player")) {
+						if(this.flags.includes("auto_spin")) {
+							this.direction +=1;
+						}
+						else {
+							this.direction = Math.atan2(this.game.mouse.y-(this.game.ctx.canvas.height/2),this.game.mouse.x-(this.game.ctx.canvas.width/2)) * 180 / Math.PI + 90;
+						}
+						if(this.game.mouse.pressed||this.flags.includes("auto_fire")) this.fireNextBarrel();
+					}
+					if(this.flags.includes("game_camera_target")) {
+						this.game.x += (this.x - this.game.x) / 10;
+						this.game.y += (-this.game.y + this.y) / 10;
+					}
+					this.healingTick();
+					if(this.stationary) {
+						this.velocity.x=0;
+						this.velocity.y=0;
+					}
+				}
+				
+				healingTick() {
+					if(new Date().getTime() < (this.lastDamageTime + this.timeToHeal * 1000)) return;
+					let rate = (new Date().getTime()/1000 - (this.lastDamageTime/1000 + this.timeToHeal)) * this.healingRate;
+					if(rate > 0.15) rate = 0.15;
+					this.hp += rate;
+					if(this.hp > this.maxhp) this.hp = this.maxhp;
+					this.lastHealTime = new Date().getTime();
+				}
+				
+				getDirectionTowards(x,y) {
+					return (Math.atan2(y-this.y,x-this.x) * 180 / Math.PI) + 90 + 180;
+				}
+				
+				directionTowards(x,y) {
+					return (Math.atan2(y-this.y,x-this.x) * 180 / Math.PI);
+				}
+				
+				render(ctx) {
+					let daf = (new Date().getTime()-this.lastDamageTime) / 1000;
+					if(daf>0.1) daf = 0.1;
+					daf = daf / 0.1;
+					daf = 1-daf;
+					if(this.stationary||this.class==this.game.tankClasses.smasher||this.class==this.game.tankClasses.spike) {
+						let t = 47.5;
+						if(this.class==this.game.tankClasses.smasher||this.class==this.game.tankClasses.spike) {
+							if(!this.spikeRotation) this.spikeRotation = 0;
+							if(!this.stationary) this.spikeRotation+=4;
+							t = this.spikeRotation;
+						}
+						if(this.class==this.game.tankClasses.spike) {
+							for(let i=0;i<4;i++){
+								game.renderShape(this.x,this.y,t+(i*23),this.size*1.25,4,"#151515",-9999,ctx);
+							}
+						}
+						else {
+							game.renderShape(this.x,this.y,t,this.size*1.25,6,"#151515",-9999,ctx);
+						}
+					}
+					for(let barrel of this.barrels) {
+						barrel.render(ctx);
+					}
+					this.body(ctx);
+				}
+				
+				body(ctx) {
+					let daf = (new Date().getTime()-this.lastDamageTime) / 1000;
+					if(daf>0.1) daf = 0.1;
+					daf = daf / 0.1;
+					daf = 1-daf;
+					ctx.beginPath();
+					ctx.fillStyle = this.getTeam().color;
+					ctx.strokeStyle = pSBC(-0.75,this.getTeam().color);
+					ctx.filter = "brightness("+(1-daf*0.7)+")";
+					ctx.arc(ctx.canvas.width/2+this.x-this.game.x,ctx.canvas.height/2+this.game.y-this.y,this.size,0,2*Math.PI,false);
+					ctx.closePath();
+					ctx.stroke();
+					ctx.fill();
+					ctx.filter = "none";
+				}
+				
+				addFlag(flag) {
+					this.flags.push(flag);
+				}
+				
+				fireNextBarrel() {
+					if(this.barrels.length==0) return;
+					if(!this.barrels.find((b)=>b.firePriority==0)) return;
+					let f = [];
+					while(f.length==0) {
+						f = this.barrels.filter((b)=>b.firePriority==this.currentBarrel);
+						if(f.length == 0) this.currentBarrel = 0;
+					}
+					let c = new Date().getTime()>(f[0].reloadBeforeFiringOtherBarrels?this.lastVolleyTime:f[0].lastFireTime)+f[0].getFirerate()*1000;
+					if(c) {
+						this.lastVolleyTime = new Date().getTime();
+						if(!this.game.flags.includes("local_player_control")) {
+							this.game.socket.emit("danjaye_request_fire",this.currentBarrel);
+						}
+						for(let barrel of f) {
+							barrel.fire();
+						}
+					}
+					if(c || !f[0].reloadBeforeFiringOtherBarrels) {
+						this.currentBarrel++;
+					}
+				}
+				
+				collideWithWall() {
+					if(this.x > this.game.width / 2 || this.x < this.game.width / -2) {
+						this.x -= this.velocity.x;
+						this.velocity.x = -this.velocity.x;
+					}
+					if(this.y > this.game.height / 2 || this.y < this.game.height / -2) {
+						this.y -= this.velocity.y;
+						this.velocity.y = -this.velocity.y;
+					}
+				}
+				
+				distance(x,y) {
+					return (x-this.x)**2 + (y-this.y)**2;
+				}
+				
+				collide() {
+					this.colliders = [];
+					this.game.tanks.forEach((tank)=>{
+						if(this.canCollide(tank)) {
+							if(this.distance(tank.x,tank.y) <= (this.size+tank.size)**2) {
+								let my = tank.mass/this.mass;
+								if(my > 1) my = 1;
+								let t = this.mass/tank.mass;
+								if(t > 1) t = 1;
+								this.velocity.x += tank.velocity.x * my;
+								this.velocity.y += tank.velocity.y * my;
+								tank.velocity.x -= tank.velocity.x * t;
+								tank.velocity.y -= tank.velocity.y * t;
+								this.colliders.push(tank);
+							}
+						}
+					});
+				}
+				
+				dissipateVelocity(s=10) {
+					this.velocity.x -= this.velocity.x / s;
+					this.velocity.y -= this.velocity.y / s;
+				}
+				
+				applyVelocity() {
+					if(this.stationary) return;
+					if(isNaN(this.velocity.x)||isNaN(this.velocity.y)||isNaN(this.direction)) {
+						this.velocity.x = 0;
+						this.velocity.y = 0;
+						this.direction = 0;
+						console.error("Velocity or direction was NaN for ", this);
+					}
+					this.x += this.velocity.x;
+					this.y += this.velocity.y;
+				}
+				
+				behaviorTick() {
+				
+				}
+				
+				say(text,time=5) {
+					this.messages.push({text:text,time:time,created:new Date().getTime()});
+				}
+				
+				getTeam() {
+					let t=this.game.teams[this.team];
+					if(!t) t={name:"",color:this.flags.includes("local_player")||(this.owner!=null&&this.owner.flags.includes("local_player"))?this.game.teams[1].color:this.game.teams[2].color};
+					return t;
+				}
+			}
+			
+			class LevelingTank extends Tank {
+				constructor(hp,size,name,lvl,game,team) {
+					super(hp,size,name,lvl,game,team);
+					this.requiredXPForNextLevel = 2;
+					this.requiredXPFormula = (xp) => Math.ceil(2 + 1.05*xp);
+					this.notXP = 0;
+					this.upgrades = [
+						{
+							id: "tank_regen",
+							name: "regeneration",
+							color: "#ff6af6",
+							value: 0,
+							max: 7
+						},
+						{
+							id: "tank_hp",
+							name: "max health",
+							color: "indianred",
+							value: 0,
+							max: 7
+						},
+						{
+							id: "tank_damage",
+							name: "body damage",
+							color: "rgb(180, 85, 215)",
+							value: 0,
+							max: 7
+						},
+						{
+							id: "bullet_speed",
+							name: "bullet speed",
+							color: "rgb(88, 116, 202)",
+							value: 0,
+							max: 7
+						},
+						{
+							id: "bullet_damage",
+							name: "bullet damage",
+							color: "#b92929",
+							value: 0,
+							max: 7
+						},
+						{
+							id: "bullet_hp",
+							name: "bullet penetration",
+							color: "#ea9132",
+							value: 0,
+							max: 7
+						},
+						{
+							id: "tank_reload",
+							name: "reload",
+							color: "#4dce4d",
+							value: 0,
+							max: 7
+						},
+						{
+							id: "tank_speed",
+							name: "movement speed",
+							color: "rgb(132, 158, 238)",
+							value: 0,
+							max: 7
+						}
+					];
+					this.requiresVisualUpgradesUpdate=true;
+					this.upgradePoints = 0;
+					this.speed=0.3;
+				}
+				
+				addXP(xp) {
+					this.notXP += xp;
+					while(this.notXP >= this.requiredXPForNextLevel&&this.visualLevel<this.game.levelcap) {
+						this.notXP -= this.requiredXPForNextLevel;
+						this.visualLevel += 1;
+						this.addUpgradePoints();
+						let lmhp = this.maxhp;
+						this.maxhp+=10/45;
+						this.hp += this.maxhp - lmhp;
+						this.requiredXPForNextLevel = this.requiredXPFormula(this.requiredXPForNextLevel);
+						this.speed-=0.1/60;
+					}
+					this.xp += xp;
+					this.size = 15 + 7 * (this.visualLevel/45);
+					/*let lmhp = this.maxhp;
+					this.maxhp = 10 + 10 * (this.visualLevel/45);
+					this.hp += this.maxhp - lmhp;*/
+				}
+				
+				addUpgradePoints() {
+					this.upgradePoints+=33/45;
+					this.requiresVisualUpgradesUpdate=true;
+				}
+				
+				getUpgrade(id) {
+					return this.upgrades.find((u)=>u.id==id);
+				}
+				
+				upgrade(id) {
+					let u = this.getUpgrade(id);
+					if(u==null||u.value==u.max||this.upgradePoints<1) return;
+					u.value+=1;
+					this.upgradePoints -= 1;
+					switch(id) {
+						case "tank_hp":
+							let lmhp = this.maxhp;
+							this.maxhp+=70/7;
+							this.hp += this.maxhp - lmhp;
+							this.mass += 50/7;
+							break;
+						case "tank_damage":
+							this.bodyDamage+=15/7;
+							break;
+						case "tank_speed":
+							this.speed+=0.15/7;
+							break;
+						case "tank_regen":
+							this.timeToHeal-=5/7;
+							this.healingRate+=0.01/7;
+							break;
+					}
+					this.requiresVisualUpgradesUpdate=true;
+				}
+				
+				reset() {
+					super.reset();
+					let us = new this.constructor().upgrades;
+					this.upgrades.forEach((u)=>{
+						let f = us.find((u2)=>u2.id==u.id);
+						if(f) {
+							if(u.value>f.max) {
+								this.upgradePoints+=u.value-f.max;
+								f.value=f.max;
+							}
+							else {
+								f.value=u.value;
+							}
+						}
+						else {
+							this.upgradePoints+=u.value;
+						}
+					});
+					this.upgrades=us;
+					this.requiresVisualUpgradesUpdate=true;
+				}
+			}
+			
+			class ArenaCloser extends Tank {
+				constructor(game,x,y,direction) {
+					super(10000,75,"Arena Closer",1,game,0);
+					this.x = x;
+					this.y = y;
+					this.addBarrel(new Barrel(17,30,0,0,this,0.33,0,0,{speed:20,damage:200,hp:50,mass:500}));
+					this.mass=1000;
+					this.speed = 0.4;
+					this.bodyDamage=100;
+					this.targetFormula = () => this.game.tanks.find((t)=>t.team!=this.team&&!(t instanceof Bullet));
+				}
+				
+				behaviorTick() {
+					let target = this.targetFormula();
+					if(target) {
+						this.fireNextBarrel();
+						this.direction += (-this.direction - this.getDirectionTowards(target.x,target.y))
+						this.push(this.speed,this.direction);
+					}
+					else {
+						this.direction += 0.25;
+					}
+				}
+				
+				collideWithWall() {
+				
+				}
+			}
+			
+			class Dominator extends Tank {
+				constructor(game,x,y,direction,base) {
+					super(3000,60,"dominator",75,game,0);
+					this.x = x;
+					this.y = y;
+					this.setClass(game.dominatorClasses.destroyer);
+					this.mass=100;
+					this.speed = 0.4;
+					this.targetFormula = () => {
+						let sussy = this.game.tanks.toSorted((a,b)=>this.distance(a.x,a.y)-this.distance(b.x,b.y)).filter((t)=>t.team!=this.team&&!(t instanceof Bullet));
+						if(sussy.length>0) {
+							let sus = sussy.find((t)=>!(t instanceof Polygon));
+							if(sus!=null&&this.distance(sus.x,sus.y)<200000) return sus;
+							if(this.distance(sussy[0].x,sussy[0].y)<200000) return sussy[0];
+						}
+					}
+					this.stationary = true;
+					this.base = base;
+					this.bodyDamage=15;
+				}
+				
+				behaviorTick() {
+					let target = this.targetFormula();
+					if(target) {
+						this.fireNextBarrel();
+						this.direction += (-this.direction - this.getDirectionTowards(target.x,target.y))
+						this.push(this.speed,this.direction);
+					}
+					else {
+						this.direction += 0.25;
+					}
+				}
+				
+				collideWithWall() {
+				
+				}
+				
+				damage(amount,damager) {
+					if(!super.damage(amount,damager)) return;
+					if(this.hp==0) {
+						this.xp = 0;
+						this.team = this.team == 0 ? damager.team : 0;
+						this.base.team = this.team;
+						this.hp = this.maxhp;
+						if(this.team==0) {
+							game.notif(this.name+" is being contested",3,game.teams[0].color,"black");
+						}
+						else {
+							game.notif(this.name+" has been defeated by "+game.getTeam(this.team).name,3,game.getTeam(this.team).color)
+						}
+					}
+				}
+			}
+			
+			class Wall extends Tank {
+				constructor(game) {
+					super(-1,200,"wall",75,game,0);
+					this.game=game;
+					this.x=0;
+					this.y=0;
+					this.team=0;
+					this.mass=10000;
+					this.stationary=true;
+					this.bodyDamage=0;
+				}
+				
+				render(ctx) {
+					this.game.renderShape(this.x,this.y,-27,this.size,4,"#bfbfbf",this.lastDamageTime);
+				}
+				
+				/*behaviorTick() {
+					this.colliders.forEach((c)=>{
+						if(!(c instanceof Wall)) {
+							//this.direction += (-this.direction - this.getDirectionTowards(target.x,target.y))
+							c.move(10,this.directionTowards(c.x,c.y));
+						}
+					});
+				}*/
+				
+				collide() {
+					this.colliders = [];
+					this.game.tanks.forEach((tank)=>{
+						if(this.canCollide(tank)&&!(tank instanceof ArenaCloser)) {
+							let zv=(z)=> {return tank.x<this.x+this.size/z&&tank.x>this.x-this.size/z&&tank.y<this.y+this.size/z&&tank.y>this.y-this.size/z;}
+							if(zv(1.4)) {
+								if(tank instanceof Bullet||((tank instanceof Polygon||tank instanceof LevelingTank)&&zv(1.5))) tank.destroy();
+								tank.velocity.x = -tank.velocity.x;
+								tank.velocity.y = -tank.velocity.y;
+								this.colliders.push(tank);
+							}
+						}
+					});
+				}
+			}
+			
+			class FallenBooster extends Tank {
+				constructor(game,x,y,direction) {
+					super(1000,40,"fallen booster",75,game,0);
+					this.x = x;
+					this.y = y;
+					this.setClass(game.tankClasses.booster);
+					this.mass=100;
+					this.team=5;
+					this.speed = 0.05;
+					this.targetFormula = () => {
+						let sussy = this.game.tanks.toSorted((a,b)=>this.distance(a.x,a.y)-this.distance(b.x,b.y)).filter((t)=>t.team!=this.team&&!(t instanceof Bullet));
+						if(sussy.length>0) {
+							let sus = sussy.find((t)=>!(t instanceof Polygon));
+							if(sus!=null) return sus;
+						}
+					}
+					this.barrels.forEach((b)=>{b.length=b.length/1.1;b.bullet.damage*=2;b.bullet.hp*=5;b.bullet.mass*=0.5;b.bullet.speed*=2;});
+					this.bodyDamage=5;
+					this.xp=2000;
+				}
+				
+				behaviorTick() {
+					let target = this.targetFormula();
+					if(target) {
+						this.fireNextBarrel();
+						this.direction += (-this.direction - this.getDirectionTowards(target.x,target.y))
+						this.push(this.speed,this.direction);
+					}
+					else {
+						this.direction += 0.25;
+					}
+				}
+				
+				damage(amount,damager) {
+					if(!super.damage(amount,damager)) return;
+					if(this.hp==0) {
+						this.game.notif("fallen booster has been defeated by "+(damager instanceof Bullet?damager.owner.name:damager.name),10,this.game.getTeam(this.team).color);
+					}
+				}
+			}
+			
+			class Necromancer extends Tank {
+				constructor(game,x=null,y=null) {
+					super(1000,40,"Necromancer",75,game,0);
+					this.game=game;
+					this.x=0||x;
+					this.y=0||y;
+					this.barrels=[
+						new Barrel(23,20,90,0,this,0.1,0,0,{speed:0.5,damage:5,hp:10,mass:3,damageRate:300,body:this.body,size:6.5},Drone,4),
+						new Barrel(23,20,-90,1,this,0.1,0,0,{speed:0.5,damage:5,hp:10,mass:3,damageRate:300,body:this.body,size:6.5},Drone,4),
+						new Barrel(23,20,0,2,this,0.1,0,0,{speed:0.5,damage:5,hp:10,mass:3,damageRate:300,body:this.body,size:6.5},Drone,4),
+						new Barrel(23,20,180,3,this,0.1,0,0,{speed:0.5,damage:5,hp:10,mass:3,damageRate:300,body:this.body,size:6.5},Drone,4)
+					];
+					this.size=75;
+					this.targetFormula = () => {
+						let sussy = this.game.tanks.toSorted((a,b)=>this.distance(a.x,a.y)-this.distance(b.x,b.y)).filter((t)=>t.team!=this.team&&!(t instanceof Bullet));
+						if(sussy.length>0) {
+							let sus = sussy.find((t)=>!(t instanceof Polygon));
+							if(sus!=null) return sus;
+						}
+					}
+					this.mass=1000;
+					this.speed=0.06;
+					this.xp=2700;
+				}
+				
+				body(ctx){
+					this.game.renderShape(this.x,this.y,this.direction-27,this.size,4,this.getTeam().color,this.lastDamageTime);
+				}
+				
+				behaviorTick() {
+					this.fireNextBarrel();
+					this.push(this.speed,this.direction);
+					this.direction += 0.25;
+				}
+				
+				damage(amount,damager) {
+					if(!super.damage(amount,damager)) return;
+					if(this.hp==0) {
+						this.game.notif("necromancer has been defeated by "+(damager instanceof Bullet?damager.owner.name:damager.name),10,this.game.getTeam(this.team).color);
+					}
+				}
+			}
+			
+			class FallenOverlord extends Tank {
+				constructor(game,x=null,y=null) {
+					super(1000,40,"Fallen Overlord",75,game,0);
+					this.game=game;
+					this.x=0||x;
+					this.y=0||y;
+					this.setClass(this.game.tankClasses.overlord);
+					this.barrels.forEach((b)=>{
+						b.bullet.size=3;
+						b.firerate=0.2;
+						b.length=29;
+						b.maxDrones=10;
+						b.bullet.lifetime=3;
+					});
+					this.team=5;
+					this.size=50;
+					this.targetFormula = () => {
+						let sussy = this.game.tanks.toSorted((a,b)=>this.distance(a.x,a.y)-this.distance(b.x,b.y)).filter((t)=>t.team!=this.team&&!(t instanceof Bullet));
+						if(sussy.length>0) {
+							let sus = sussy.find((t)=>!(t instanceof Polygon));
+							if(sus!=null) return sus;
+						}
+					}
+					this.mass=1000;
+					this.speed=0.06;
+					this.xp=1600;
+				}
+				
+				behaviorTick() {
+					this.fireNextBarrel();
+					this.push(this.speed,this.direction);
+					this.direction += 0.25;
+				}
+				
+				damage(amount,damager) {
+					if(!super.damage(amount,damager)) return;
+					if(this.hp==0) {
+						this.game.notif(this.name+" has been defeated by "+(damager instanceof Bullet?damager.owner.name:damager.name),10,this.game.getTeam(this.team).color);
+					}
+				}
+			}
+			
+			class Mothership extends Tank {
+				constructor(game,x,y,direction) {
+					super(4000,80,"mothership",130,game,0);
+					this.x = x;
+					this.y = y;
+					this.mass=1000;
+					this.speed = 0.05;
+					this.targetFormula = () => {
+						let sussy = this.game.tanks.toSorted((a,b)=>this.distance(a.x,a.y)-this.distance(b.x,b.y)).filter((t)=>t.team!=this.team&&!(t instanceof Bullet));
+						if(sussy.length>0) {
+							let sus = sussy.find((t)=>!(t instanceof Polygon));
+							if(sus!=null&&this.distance(sus.x,sus.y)<100000) return sus;
+							if(this.distance(sussy[0].x,sussy[0].y)<100000) return sussy[0];
+						}
+					}
+					for(let i=0;i<18;i++) {
+						this.barrels.push(new Barrel(5,24,90+i*20,i,this,0.05,0,0,{speed:0.3,damage:3,hp:30,mass:3,damageRate:300,size:1},Drone,2,null,0,0,true,i>9));
+					}
+					this.bodyDamage=50;
+				}
+				
+				behaviorTick() {
+					let target = this.targetFormula();
+					if(target) {
+						this.fireNextBarrel();
+						this.direction += (-this.direction - this.getDirectionTowards(target.x,target.y))
+						this.push(this.speed,this.direction);
+					}
+					else {
+						this.direction += 0.25;
+					}
+				}
+				
+				body(ctx) {
+					this.game.renderShape(this.x,this.y,this.direction,this.size,18,this.getTeam().color,this.lastDamageTime);
+				}
+			}
+			
+			class Bullet extends Tank {
+				constructor(hp,size,name,lvl,game,team,speed,owner,damage=2,mass=20) {
+					super(hp,size,name,lvl,game,team);
+					this.speed = speed;
+					this.owner = owner;
+					this.lifetime = 3;
+					this.bodyDamage = damage;
+					this.canCollide = (tank)=>tank!=this&&tank!=this.owner&&(tank.team!=this.team||tank.team==null)&&(!tank.owner||tank.owner!=this.owner);
+					this.mass = mass;
+					this.fireBarrelsOffsetTime = 1000;
+				}
+				
+				tick() {
+					if(this.createdAt+(this.lifetime*1000)<new Date().getTime()) {
+						this.destroy();
+					}
+					if(this.team!=0) this.collideBase();
+					this.collide();
+					//this.velocity.x += Math.sin(this.direction*Math.PI/180) * this.speed;
+					//this.velocity.y += Math.cos(this.direction*Math.PI/180) * this.speed;
+					this.applyVelocity();
+					this.dissipateVelocity(75);
+					if(new Date().getTime()>this.createdAt+this.fireBarrelsOffsetTime) this.fireNextBarrel();
+				}
+				
+				render(ctx) {
+					for(let barrel of this.barrels) {
+						barrel.render(ctx);
+					}
+					ctx.beginPath();
+					ctx.fillStyle = this.getTeam().color;
+					ctx.strokeStyle = pSBC(-0.75,this.getTeam().color);
+					ctx.arc(ctx.canvas.width/2+this.x-this.game.x,ctx.canvas.height/2+this.game.y-this.y,this.size,0,2*Math.PI);
+					ctx.closePath();
+					ctx.stroke();
+					ctx.fill();
+				}
+				
+				collideBase() {
+					for(let base of this.game.bases) {
+						if(base.team == this.team) continue;
+						if(base instanceof DominatorBase) continue;
+						if(this.x >= base.x && this.x <= base.x + base.width && this.y <= base.y && this.y >= base.y - base.height) {
+							this.destroy();
+						}
+					}
+				}
+			}
+			
+			class Drone extends Bullet {
+				constructor(hp,size,name,level,game,team,speed,owner,damage,mass) {
+					super(hp,size,name,level,game,team,speed,owner,damage,mass);
+					this.lifetime = 9999999999;
+					this.target = {x:0,y:0};
+					this.controllable = true;
+				}
+				
+				behaviorTick() {
+					let x = this.owner.x;
+					let y = this.owner.y;
+					if(this.owner instanceof Base) {
+						x += this.owner.width/2;
+						y -= this.owner.height/2;
+					}
+					let tr = this.game.tanks.toSorted((a,b)=>this.distance(a.x,a.y)-this.distance(b.x,b.y)).filter((t)=>t.team!=this.owner.team&&(!(t instanceof Polygon)||!(this.owner instanceof Base))&&t.distance(x,y)<150000);
+					let f = tr.find((t)=>!(t instanceof Bullet));
+					if(f==null) f = tr[0];
+					tr = f;
+					let sm = 1;
+					let sus=1;
+					if(this.owner.flags.includes("local_player")&&this.game.mouse.pressed&&this.controllable) {
+						tr = {};
+						tr.x = this.game.x - this.game.canvas.width/2 + this.game.mouse.x;
+						tr.y = this.game.canvas.height/2 + this.game.y - this.game.mouse.y;
+						sm = 1.1;
+						sus=0.5;
+					}
+					if(tr!=null) {
+						this.direction += (this.owner.flags.includes("local_player")&&this.controllable&&this.game.rightMousePressed?180:0) + (-this.direction - this.getDirectionTowards(tr.x,tr.y)) + (45 * sus) - Math.random() * (22.5 * sus);
+					}
+					else {
+						this.direction += (-this.direction - this.getDirectionTowards(x,y)) + 45 - Math.random() * 22.5;
+						sm = 0.3;
+					}
+					this.push(sm*this.speed+2-4*Math.random(),this.direction);
+				}
+				
+				render(ctx) {
+					this.game.renderShape(this.x,this.y,this.direction,this.size,3,this.getTeam().color);
+				}
+				
+				tick() {
+					if(this.createdAt+(this.lifetime*1000)<new Date().getTime() || (!(this.owner instanceof Base)&&!this.game.tanks.includes(this.owner))) {
+						this.destroy();
+					}
+					if(this.team!=0) this.collideBase();
+					this.collide();
+					//this.velocity.x += Math.sin(this.direction*Math.PI/180) * this.speed;
+					//this.velocity.y += Math.cos(this.direction*Math.PI/180) * this.speed;
+					this.applyVelocity();
+					this.dissipateVelocity();
+				}
+			}
+			
+			class Trap extends Bullet {
+				constructor(hp,size,name,level,game,team,speed,owner,damage,mass,lifetime=12) {
+					super(hp,size,name,level,game,team,speed,owner,damage,mass);
+					this.lifetime = lifetime;
+				}
+				
+				render(ctx) {
+					ctx.translate(ctx.canvas.width/2+this.x-this.game.x,ctx.canvas.height/2+this.game.y-this.y);
+					ctx.beginPath();
+					ctx.rotate(((this.direction - 90) * Math.PI) / 180);
+					let sr = this.size * 2;
+					ctx.moveTo(-sr/2,-sr/4);
+					ctx.lineTo(-sr/6,sr/6);
+					ctx.lineTo(0,sr/1.66);
+					ctx.lineTo(sr/6,sr/6);
+					ctx.lineTo(sr/2,-sr/4);
+					ctx.lineTo(0,-sr/6);
+					ctx.closePath();
+					ctx.translate(-(ctx.canvas.width/2+this.x-this.game.x),-(ctx.canvas.height/2+this.game.y-this.y));
+					
+					ctx.fillStyle = this.getTeam().color;
+					ctx.strokeStyle = pSBC(-0.75,this.getTeam().color);
+					ctx.stroke();
+					ctx.fill();
+					ctx.resetTransform();
+				}
+				
+				tick() {
+					if(this.createdAt+(this.lifetime*1000)<new Date().getTime() || (!(this.owner instanceof Base)&&!this.game.tanks.includes(this.owner))) {
+						this.destroy();
+					}
+					if(this.team!=0) this.collideBase();
+					this.collide();
+					//this.velocity.x += Math.sin(this.direction*Math.PI/180) * this.speed;
+					//this.velocity.y += Math.cos(this.direction*Math.PI/180) * this.speed;
+					this.applyVelocity();
+					this.dissipateVelocity(20);
+				}
+			}
+			
+			class Polygon extends Tank {
+				constructor(hp,size,name,lvl,game,team,sides,color) {
+					super(hp,size,name,lvl,game,team);
+					this.sides = sides;
+					this.color = color;
+					this.direction = Math.random()*360;
+					this.randomMoveDirection = Math.random()*360;
+					this.velocity.x = 0.1*((Math.random()*2)-1);
+					this.velocity.y = 0.1*((Math.random()*2)-1);
+					this.randomDirectionModifier = 0.1*((Math.random()*2)-1);
+				}
+				
+				tick() {
+					this.collideWithWall();
+					this.collide();
+					this.velocity.x += Math.sin(this.randomMoveDirection*Math.PI/180) * 0.1 * this.randomDirectionModifier;
+					this.velocity.y += Math.cos(this.randomMoveDirection*Math.PI/180) * 0.1 * this.randomDirectionModifier;
+					this.applyVelocity();
+					this.direction += this.randomDirectionModifier;
+					this.dissipateVelocity();
+				}
+				
+				render(ctx) {
+					this.game.renderShape(this.x,this.y,this.direction,this.size,this.sides,this.color,this.lastDamageTime);
+					/*var numberOfSides = this.sides,
+						size = this.size,
+						Xcenter = ctx.canvas.width/2 + this.x - this.game.x,
+						Ycenter = ctx.canvas.height/2 + this.game.y + this.y,
+						step  = 2 * Math.PI / this.sides,
+						shift = (Math.PI / 180.0) * -18;
+					ctx.translate((ctx.canvas.width/2)+this.x-this.game.x,(ctx.canvas.height/2)+this.game.y-this.y);
+					ctx.rotate(((this.direction - 90) * Math.PI) / 180);
+					ctx.beginPath();      
+					for (var i = 0; i <= this.sides;i++) {
+						var curStep = i * step + shift;
+						ctx.lineTo (+ size * Math.cos(curStep), size * Math.sin(curStep));
+					}
+					ctx.closePath();
+					ctx.translate(-(ctx.canvas.width/2)+this.x-this.game.x,-(ctx.canvas.height/2)+this.game.y-this.y);
+					
+					ctx.strokeStyle = pSBC(-0.75,this.color);
+					ctx.fillStyle = this.color;
+					let daf = (new Date().getTime()-this.lastDamageTime) / 1000;
+					if(daf>0.1) daf = 0.1;
+					daf = daf / 0.1;
+					daf = 1-daf;
+					ctx.filter = "brightness("+(1-daf*0.7)+")";
+					ctx.stroke();
+					ctx.fill();
+					ctx.filter = "none";
+					ctx.resetTransform();*/
+				}
+			}
+			
+			class Square extends Polygon {
+				constructor(game,x,y) {
+					super(2,12,"square",1,game,0,4,"#ffe86a");
+					this.x = x;
+					this.y = y;
+					this.mass = 2;
+					this.xp = 1;
+				}
+				
+				behaviorTick() {
+					
+				}
+				
+				damage(amount,damager) {
+					if(!super.damage(amount,damager)) return;
+					let d = (damager instanceof Square?damager.owner:damager);
+					if(this.hp==0&&d.class==this.game.tankClasses.necromancer) {
+						this.team=d.team;
+						this.color=d.game.getTeam(damager.team).color;
+						this.hp=50;
+						this.mass=20;
+						this.owner=d;
+						this.controllable=true;
+						this.behaviorTick=new Drone().behaviorTick;
+					}
+				}
+			}
+			
+			class Pentagon extends Polygon {
+				constructor(game,x,y) {
+					super(14,20,"pentagon",1,game,0,5,"#27119c");
+					this.x = x;
+					this.y = y;
+					this.mass = 20;
+					this.xp = 13;
+					this.bodyDamage=3;
+				}
+			}
+			
+			class Triangle extends Polygon {
+				constructor(game,x,y) {
+					super(4,12,"triangle",1,game,0,3,"#cc1c12");
+					this.x = x;
+					this.y = y;
+					this.mass = 5;
+					this.xp = 3;
+				}
+			}
+			
+			class AlphaPentagon extends Pentagon {
+				constructor(game,x,y) {
+					super(game,x,y);
+					this.maxhp = 500;
+					this.hp = 500;
+					this.size = 50;
+					this.mass = 300;
+					this.xp = 1222;
+					this.bodyDamage=16;
+				}
+			}
+			
+			class Base {
+				constructor(game,team,x,y,width=500,height=500,spawnDrones=true) {
+					this.game = game;
+					this.team = team;
+					this.x = x;
+					this.y = y;
+					this.width = width;
+					this.height = height;
+					this.drones = [];
+					this.flags = [];
+					this.spawnDrones = spawnDrones;
+					this.dominator = null;
+				}
+				
+				canSpawnDrone() {
+					return this.spawnDrones && this.drones.length < 10;
+				}
+				
+				render(ctx) {
+					ctx.beginPath();
+					ctx.rect((ctx.canvas.width/2)+this.x-this.game.x,(ctx.canvas.height/2)+this.game.y-this.y,this.width,this.height);
+					ctx.fillStyle = this.game.getTeam(this.team).color;
+					ctx.filter="opacity(0.5)";
+					ctx.fill();
+					ctx.filter="none";
+				}
+				
+				tick() {
+					this.drones = this.game.tanks.filter((t)=>t instanceof Drone&&t.team==this.team);
+					if(this.canSpawnDrone()) {
+						let d = new Drone(500,2,"",1,this.game,this.team,0.5,this,0.5,50);
+						d.addFlag("local_player_control");
+						d.x = this.x + this.width/2;
+						d.y = this.y - this.height/2;
+						d.damageRate = 100;
+						this.game.addTank(d);
+					}
+				}
+				
+				setDominator(dominator) {
+					this.dominator = dominator;
+				}
+			}
+			
+			class DominatorBase extends Base {
+				constructor(game,team,x,y,width,height) {
+					super(game,team,x,y,width,height,false);
+				}
+				
+				tick() {
+					if(this.dominator == null) {
+						let d = new Dominator(game,this.x+this.width/2,this.y-this.height/2,0,this);
+						d.addFlag("local_player_control");
+						d.setClass(this.game.getRandomObjectValue(this.game.dominatorClasses));
+						this.setDominator(d);
+						this.game.addTank(d);
+					}
+				}
+			}
+			
+			class DanjayeGame extends DanjayeEventHolder {
+				constructor(canvas,endpoint="") {
+					super();
+					this.tanks = [];
+					this.canvas = canvas;
+					this.fixContext();
+					this.width = 500;
+					this.height = 500;
+					this.pInfoBox = document.createElement("div");
+					this.pInfoBox.innerHTML = "<div><h1>dev</h1><div class='progressbar scorebar'><span>Level 1. 5/10 XP</span><div style='width:50%;'></div></div><div class='progressbar rankbar'><span>Novice Penta Shot</span><div style='width:10%;'></div></div></div>";
+					this.pInfoBox.setAttribute("style","position:absolute;bottom:20px;left:0;width:100%;display:flex;justify-content:center;user-select:none;");
+					document.body.appendChild(this.pInfoBox);
+					this.teams = [
+						{
+							name: "server",
+							color: "#ffe86a"
+						},
+						{
+							name: "blu",
+							color: "#1996e3"
+						},
+						{
+							name: "red",
+							color: "#e31919"
+						},
+						{
+							name: "grn",
+							color: "#3b8231"
+						},
+						{
+							name: "prpl",
+							color: "#7c1dbd"
+						},
+						{
+							name: "fallen",
+							color: "#606060"
+						}
+					];
+					this.x = 0;
+					this.y = 0;
+					this.zoom = 1;
+					this.mouse = {
+						x: 0,
+						y: 0,
+						pressed: false,
+						button: 0
+					};
+					document.addEventListener('mousemove', (event) => {
+						this.mouse.x = event.clientX;
+						this.mouse.y = event.clientY;
+					});
+					this.keyboard = {
+						pressed: []
+					};
+					document.addEventListener("keydown",(e)=>{
+						if(!this.keyboard.pressed.includes(e.keyCode)) this.keyboard.pressed.push(e.keyCode);
+						if(parseInt(e.key)&&this.localPlayer!=null&&this.localPlayer instanceof LevelingTank){
+							let k = this.localPlayer.upgrades[parseInt(e.key)-1];
+							if(k) this.localPlayer.upgrade(k.id);
+						}
+					});
+					document.addEventListener("keyup",(e)=>{
+						this.keyboard.pressed.splice(this.keyboard.pressed.indexOf(e.keyCode),1);
+					});
+					document.addEventListener("mousedown",(e)=>{
+						if(e.button==0) this.mouse.pressed = true;
+						if(e.button==2) this.rightMousePressed = true;
+						this.mouse.target=e.target;
+					});
+					document.addEventListener("mouseup",(e)=>{
+						if(e.button==0) this.mouse.pressed = false;
+						if(e.button==2) this.rightMousePressed = false;
+					});
+					this.garbageCollection = [];
+					this.tankClasses = {
+						tank: (owner) => {
+							return {
+								barrels: [
+									new Barrel(15,40,0,0,owner,0.5,0,1,{speed:7,damage:2,hp:3,mass:10})
+								]
+							};
+						},
+						twin: (owner) => {
+							return {
+								barrels: [
+									new Barrel(15,39,0,0,owner,0.20,9,1,{speed:7,damage:1,hp:1,mass:10}),
+									new Barrel(15,39,0,1,owner,0.20,-9,1,{speed:7,damage:1,hp:1,mass:10})
+								]
+							};
+						},
+						destroyer: (owner) => {
+							return {
+								barrels: [
+									new Barrel(30,39,0,0,owner,1.7,0,5,{speed:9,damage:10,hp:10,mass:50})
+								]
+							};
+						},
+						gunner: (owner) => {
+							return {
+								barrels: [
+									new Barrel(6,35,0,0,owner,0.1,-11,0.1,{speed:6,damage:0.5,hp:0.25,mass:3}),
+									new Barrel(6,35,0,3,owner,0.1,11,0.1,{speed:6,damage:0.5,hp:0.25,mass:3}),
+									new Barrel(6,39,0,2,owner,0.1,5,0.2,{speed:6,damage:0.5,hp:0.25,mass:3}),
+									new Barrel(6,39,0,1,owner,0.1,-5,0.2,{speed:6,damage:0.5,hp:0.25,mass:3})
+								]
+							}
+						},
+						penta_shot: (owner) => {
+							return {
+								barrels: [
+									new Barrel(15,34,-60,0,owner,0.3,0,1,{speed:7,damage:1,hp:0.5,mass:10}),
+									new Barrel(15,34,60,0,owner,0.3,0,1,{speed:7,damage:1,hp:0.5,mass:10}),
+									new Barrel(15,39,-25,0,owner,0.3,0,1,{speed:7,damage:1,hp:0.5,mass:10}),
+									new Barrel(15,39,25,0,owner,0.3,0,1,{speed:7,damage:1,hp:0.5,mass:10}),
+									new Barrel(15,45,0,0,owner,0.3,0,1,{speed:9,damage:1,hp:0.5,mass:10})
+								]
+							}
+						},
+						octo_shot: (owner) => {
+							return {
+								barrels: [
+									new Barrel(15,39,0,0,owner,0.3,0,1,{speed:5,damage:0.5,hp:1,mass:10}),
+									new Barrel(15,39,45,0,owner,0.3,0,1,{speed:5,damage:0.5,hp:1,mass:10}),
+									new Barrel(15,39,90,0,owner,0.3,0,1,{speed:5,damage:0.5,hp:1,mass:10}),
+									new Barrel(15,39,135,0,owner,0.3,0,1,{speed:5,damage:0.5,hp:1,mass:10}),
+									new Barrel(15,39,-45,0,owner,0.3,0,1,{speed:5,damage:0.5,hp:1,mass:10}),
+									new Barrel(15,39,-90,0,owner,0.3,0,1,{speed:5,damage:0.5,hp:1,mass:10}),
+									new Barrel(15,39,-135,0,owner,0.3,0,1,{speed:5,damage:0.5,hp:1,mass:10}),
+									new Barrel(15,39,180,0,owner,0.20,0,1,{speed:7,damage:0.5,hp:1,mass:10})
+								]
+							}
+						},
+						streamliner: (owner) => {
+							return {
+								barrels: [
+									new Barrel(12,65,0,0,owner,0.1,0,0.1,{speed:8,damage:0.4,hp:1,mass:1}),
+									new Barrel(12,57,0,1,owner,0.1,0,0.1,{speed:9,damage:0.4,hp:1,mass:1}),
+									new Barrel(12,46,0,1,owner,0.1,0,0.1,{speed:9,damage:0.4,hp:1,mass:1}),
+									new Barrel(12,35,0,2,owner,0.1,0,0.1,{speed:9,damage:0.4,hp:1,mass:1}),
+									new Barrel(12,25,0,3,owner,0.1,0,0.1,{speed:9,damage:0.4,hp:1,mass:1})
+								]
+							}
+						},
+						tri_angle: (owner) => {
+							return {
+								barrels: [
+									new Barrel(15,42,0,1,owner,0.2,0,0,{speed:5,damage:0.5,hp:0.5,mass:10}),
+									new Barrel(15,39,150,0,owner,0.05,0,2.5,{speed:5,damage:0.5,hp:0.5,mass:10}),
+									new Barrel(15,39,-150,0,owner,0.05,0,2.5,{speed:5,damage:0.5,hp:0.5,mass:10})
+								]
+							}
+						},
+						triplet: (owner) => {
+							return {
+								barrels: [
+									new Barrel(13,35,0,1,owner,0.20,9,1,{speed:7,damage:1,hp:0.5,mass:10}),
+									new Barrel(13,35,0,2,owner,0.20,-9,1,{speed:7,damage:1,hp:0.5,mass:10}),
+									new Barrel(13,40,0,0,owner,0.20,0,1,{speed:7,damage:1,hp:0.5,mass:10})
+								]
+							};
+						},
+						annihilator: (owner) => {
+							return {
+								barrels: [
+									new Barrel(38,36.5,0,0,owner,2.5,0,10,{speed:8,damage:20,hp:30,mass:100})
+								]
+							}
+						},
+						overlord: (owner) => {
+							return {
+								barrels: [
+									new Barrel(28,33,0,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,2),
+									new Barrel(28,33,90,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,2),
+									new Barrel(28,33,180,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,2),
+									new Barrel(28,33,-90,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,2)
+								]
+							}
+						},
+						machine_gun: (owner) => {
+							return {
+								barrels: [
+									new Barrel(29,45,0,0,owner,0.15,0,1,{speed:7,damage:1,hp:1,mass:9,size:6},Bullet,null,15)
+								]
+							}
+						},
+						sprayer: (owner) => {
+							return {
+								barrels: [
+									new Barrel(18,60,0,0,owner,0.15,0,1,{speed:7,damage:0.9,hp:2,mass:12},Bullet,null,15),
+									new Barrel(32,45,0,1,owner,0.15,0,1,{speed:9,damage:0.5,hp:1,mass:9,size:6},Bullet,null,15)
+								]
+							}
+						},
+						hybrid: (owner) => {
+							return {
+								barrels: [
+									new Barrel(30,39,0,0,owner,1.7,0,5,{speed:9,damage:10,hp:10,mass:50}),
+									new Barrel(28,33,180,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,2,null,null,null,null,false)
+								]
+							}
+						},
+						trapper: (owner) => {
+							return {
+								barrels: [
+									new Barrel(12,30,0,99,owner,0.5,0,1,{speed:7,damage:2,hp:3,mass:10}),
+									new Barrel(25,7,0,0,owner,0.5,0,0,{speed:10,damage:2,hp:30,mass:50,damageRate:500,size:3,lifetime:24},Trap,2,null,0.2,25)
+								]
+							}
+						},
+						mega_trapper: (owner) => {
+							return {
+								barrels: [
+									new Barrel(20,29,0,99,owner,0.5,0,1,{speed:7,damage:2,hp:3,mass:10}),
+									new Barrel(40,10,0,0,owner,2.5,0,10,{speed:5,damage:15,hp:100,mass:200,damageRate:1000},Trap,2,null,0.2,23.5)
+								]
+							}
+						},
+						gunner_trapper: (owner) => {
+							return {
+								barrels: [
+									new Barrel(20,29,0,99,owner,0.5,0,1,{speed:7,damage:2,hp:3,mass:10}),
+									new Barrel(40,10,0,0,owner,0.5,0,0,{speed:10,damage:2,hp:30,mass:50,damageRate:500,size:3,lifetime:24},Trap,2,null,0.2,23.5,false),
+									new Barrel(6,39,180,2,owner,0.1,8,0.2,{speed:6,damage:0.5,hp:0.25,mass:3}),
+									new Barrel(6,39,180,1,owner,0.1,-8,0.2,{speed:6,damage:0.5,hp:0.25,mass:3})
+								]
+							}
+						},
+						flank_guard: (owner) => {
+							return {
+								barrels: [
+									new Barrel(15,40,0,0,owner,0.5,0,1,{speed:7,damage:2,hp:3,mass:10}),
+									new Barrel(15,35,180,0,owner,0.5,0,1,{speed:7,damage:2,hp:3,mass:10})
+								]
+							};
+						},
+						overseer: (owner) => {
+							return {
+								barrels: [
+									new Barrel(28,33,90,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,4),
+									new Barrel(28,33,-90,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,4)
+								]
+							}
+						},
+						smasher: (owner) => {
+							let f=null;
+							f=()=>{
+								for(let u of owner.upgrades) {
+									if(["bullet_damage","bullet_hp","bullet_speed","tank_reload"].includes(u.id)) {
+										if(u.value>0) owner.upgradePoints+=u.value;
+										owner.upgrades.splice(owner.upgrades.indexOf(u),1);
+										f();
+										break;
+									}
+								}
+							}
+							f();
+							for(let u of owner.upgrades) {
+								u.max+=3;
+							}
+							owner.requiresVisualUpgradesUpdate=true;
+							return {
+								barrels: [
+								
+								]
+							}
+						},
+						sniper: (owner) => {
+							return {
+								barrels: [
+									new Barrel(15,50,0,0,owner,0.5,0,1,{speed:11,damage:2,hp:3,mass:10})
+								]
+							};
+						},
+						booster: (owner) => {
+							return {
+								barrels: [
+									new Barrel(15,42,0,1,owner,0.2,0,0,{speed:5,damage:0.5,hp:0.5,mass:10}),
+									new Barrel(15,33,130,0,owner,0.05,0,1.75,{speed:5,damage:0.5,hp:0.5,mass:10}),
+									new Barrel(15,33,-130,2,owner,0.05,0,1.75,{speed:5,damage:0.5,hp:0.5,mass:10}),
+									new Barrel(15,39,150,2,owner,0.05,0,1.75,{speed:5,damage:0.5,hp:0.5,mass:10}),
+									new Barrel(15,39,-150,0,owner,0.05,0,1.75,{speed:5,damage:0.5,hp:0.5,mass:10})
+								]
+							}
+						},
+						fighter: (owner) => {
+							return {
+								barrels: [
+									new Barrel(15,42,0,1,owner,0.2,0,0,{speed:5,damage:0.5,hp:0.5,mass:10}),
+									new Barrel(15,39,90,0,owner,0.05,0,1.75,{speed:5,damage:1,hp:1,mass:10}),
+									new Barrel(15,39,-90,0,owner,0.05,0,1.75,{speed:5,damage:1,hp:1,mass:10}),
+									new Barrel(15,39,150,0,owner,0.05,0,1.75,{speed:5,damage:1,hp:1,mass:10}),
+									new Barrel(15,39,-150,0,owner,0.05,0,1.75,{speed:5,damage:1,hp:1,mass:10})
+								]
+							}
+						},
+						spike: (owner) => {
+							let f=null;
+							f=()=>{
+								for(let u of owner.upgrades) {
+									if(["bullet_damage","bullet_hp","bullet_speed","tank_reload"].includes(u.id)) {
+										if(u.value>0) owner.upgradePoints+=u.value;
+										owner.upgrades.splice(owner.upgrades.indexOf(u),1);
+										f();
+										break;
+									}
+								}
+							}
+							f();
+							for(let u of owner.upgrades) {
+								u.max+=7;
+							}
+							owner.requiresVisualUpgradesUpdate=true;
+							return {
+								barrels: [
+								
+								]
+							}
+						},
+						necromancer: (owner) => {
+							owner.body = function(ctx) {
+								this.game.renderShape(this.x,this.y,this.direction-26,this.size*1.3,4,this.getTeam().color,-9999,ctx);
+							}
+							return {
+								barrels: [
+									new Barrel(28,33,90,2,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,4),
+									new Barrel(28,33,-90,2,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,4)
+								]
+							}
+						},
+						factory: (owner) => {
+							owner.body = function(ctx) {
+								this.game.renderShape(this.x,this.y,this.direction-26,this.size*1.3,4,this.game.getTeam(this.team).color,-9999,ctx);
+							}
+							return {
+								barrels: [
+									new Barrel(28,33,0,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300,tankClass:game.tankClasses.tank,behaviorTick:function(){
+										this.owner.xp+=this.xp;
+										this.xp=0;
+										new Drone().behaviorTick.call(this);
+										this.fireNextBarrel();
+									}},Tank,2,null,null,0,true,true)
+								]
+							}
+						},
+						overtrapper: (owner) => {
+							return {
+								barrels: [
+									new Barrel(12,30,0,99,owner,0.5,0,1,{speed:7,damage:2,hp:3,mass:10}),
+									new Barrel(25,7,0,0,owner,0.5,0,0,{speed:10,damage:2,hp:30,mass:50,damageRate:500,size:3,lifetime:24},Trap,2,null,0.2,25),
+									new Barrel(28,33,120,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,2),
+									new Barrel(28,33,-120,0,owner,3,0,0,{speed:0.5,damage:1,hp:10,mass:3,damageRate:300},Drone,2)
+								]
+							}
+						},
+						battleship: (owner) => {
+							return {
+								barrels: [
+									new Barrel(12,30,90,0,owner,0.3,8,0,{speed:0.33,damage:0.2,hp:0.5,mass:1,damageRate:300,lifetime:3},Drone,4,null,-0.3,0,true),
+									new Barrel(12,30,-90,0,owner,0.3,-8,0,{speed:0.33,damage:0.2,hp:0.5,mass:1,damageRate:300,lifetime:3},Drone,6,null,-0.3,0,true,false),
+									new Barrel(12,30,90,0,owner,0.3,-8,0,{speed:0.33,damage:0.2,hp:0.5,mass:1,damageRate:300,lifetime:3},Drone,4,null,-0.3,0,true),
+									new Barrel(12,30,-90,0,owner,0.3,8,0,{speed:0.33,damage:0.2,hp:0.5,mass:1,damageRate:300,lifetime:3},Drone,6,null,-0.3,0,true,false)
+								]
+							}
+						},
+						auto_5: (owner) => {
+							return {
+								barrels: [
+									(()=>{let a=new AutoBarrel(7,19,0,0,owner,0.5,0,1,{speed:7,damage:1,hp:1,mass:10});a.vertOffset=16;return a;})(),
+									(()=>{let a=new AutoBarrel(7,19,72,0,owner,0.5,0,1,{speed:7,damage:1,hp:1,mass:10});a.vertOffset=16;return a;})(),
+									(()=>{let a=new AutoBarrel(7,19,144,0,owner,0.5,0,1,{speed:7,damage:1,hp:1,mass:10});a.vertOffset=16;return a;})(),
+									(()=>{let a=new AutoBarrel(7,19,216,0,owner,0.5,0,1,{speed:7,damage:1,hp:1,mass:10});a.vertOffset=16;return a;})(),
+									(()=>{let a=new AutoBarrel(7,19,288,0,owner,0.5,0,1,{speed:7,damage:1,hp:1,mass:10});a.vertOffset=16;return a;})()
+								]
+							}
+						},
+						ranger: (owner) => {
+							return {
+								barrels: [
+									new Barrel(12,75,0,0,owner,1,0,1,{speed:14,damage:4,hp:3,mass:10}),
+									(()=>{let a=new Barrel(11,23,0,99,owner,2.2,0,0,{speed:10,damage:25,hp:50,mass:200},Bullet,null,null,-0.9);a.vertOffset=6;return a;})(),
+								]
+							}
+						},
+						hunter: (owner) => {
+							return {
+								barrels: [
+									(()=>{let a=new Barrel(15,50,0,1,owner,1,0,1,{speed:10,damage:1,hp:2,mass:7});a.spread=5;return a;})(),
+									(()=>{let a=new Barrel(20,40,0,0,owner,0.1,0,1,{speed:10,damage:3,hp:3,mass:15});a.spread=5;return a;})()
+								]
+							}
+						},
+						rocketeer: (owner) => {
+							return {
+								barrels: [
+									(()=>{let a=new Barrel(22.5,30,0,0,owner,2,0,1,{speed:3,damage:10,hp:7,mass:40,barrels:[
+										()=>new Barrel(29,40,180,0,null,0.1,0,1,{speed:7,damage:1,hp:1,mass:9,size:6},Bullet,null,15)
+									] });a.funnelAngle=-0.35;return a;})(),
+									(()=>{let a=new Barrel(30,5,0,99,owner,1,0,1,{speed:6,damage:10,hp:20});a.funnelAngle=0.1;a.vertOffset=25;return a;})()
+								]
+							}
+						}
+					};
+					this.bases = [];
+					this.localPlayer = null;
+					this.tankClassPathways = new Map();
+					this.tankClassPathways.set(this.tankClasses.tank,[
+						{ _class: this.tankClasses.machine_gun, level: 15 },
+						{ _class: this.tankClasses.twin, level: 15 },
+						{ _class: this.tankClasses.flank_guard, level: 15 },
+						{ _class: this.tankClasses.smasher, level: 30 },
+						{ _class: this.tankClasses.sniper, level: 15 }
+					]);
+					this.tankClassPathways.set(this.tankClasses.machine_gun,[
+						{ _class: this.tankClasses.gunner, level: 30 },
+						{ _class: this.tankClasses.destroyer, level: 30 },
+						{ _class: this.tankClasses.sprayer, level: 45 }
+					]);
+					this.tankClassPathways.set(this.tankClasses.destroyer,[
+						{ _class: this.tankClasses.annihilator, level: 45 },
+						{ _class: this.tankClasses.hybrid, level: 45 },
+						{ _class: this.tankClasses.rocketeer, level: 45 }
+					]);
+					this.tankClassPathways.set(this.tankClasses.gunner,[
+						{ _class: this.tankClasses.streamliner, level: 45 },
+						{ _class: this.tankClasses.gunner_trapper, level: 45 }
+					]);
+					this.tankClassPathways.set(this.tankClasses.twin,[
+						{ _class: this.tankClasses.penta_shot, level: 45 },
+						{ _class: this.tankClasses.octo_shot, level: 45 },
+						{ _class: this.tankClasses.triplet, level: 45 }
+					]);
+					this.tankClassPathways.set(this.tankClasses.flank_guard,[
+						{ _class: this.tankClasses.tri_angle, level: 30 }
+					]);
+					this.tankClassPathways.set(this.tankClasses.trapper,[
+						{ _class: this.tankClasses.gunner_trapper, level: 45 }
+					]);
+					this.tankClassPathways.set(this.tankClasses.sniper,[
+						{ _class: this.tankClasses.overseer, level: 30 },
+						{ _class: this.tankClasses.trapper, level: 30 },
+						{ _class: this.tankClasses.hunter, level: 30 }
+					]);
+					this.tankClassPathways.set(this.tankClasses.overseer,[
+						{ _class: this.tankClasses.overlord, level: 45 },
+						{ _class: this.tankClasses.necromancer, level: 45 },
+						{ _class: this.tankClasses.factory, level: 45 },
+						{ _class: this.tankClasses.overtrapper, level: 45 },
+						{ _class: this.tankClasses.battleship, level: 45 }
+					]);
+					this.tankClassPathways.set(this.tankClasses.tri_angle,[
+						{ _class: this.tankClasses.booster, level: 45 },
+						{ _class: this.tankClasses.fighter, level: 45 }
+					]);
+					/*this.tankClassPathways.set(this.tankClasses.smasher,[
+						{ _class: this.tankClasses.spike, level: 45 }
+					]);*/
+					this.dominatorClasses = {
+						destroyer: (owner) => {
+							return {
+								barrels: [
+									new Barrel(14,32.5,0,0,owner,2.2,0,0,{speed:10,damage:25,hp:50,mass:200})
+								]
+							}
+						},
+						gunner: (owner) => {
+							return {
+								barrels: [
+									new Barrel(3,32,0,0,owner,0.075,-3,0.1,{speed:13,damage:2,hp:1.5,mass:2}),
+									new Barrel(3,32,0,2,owner,0.075,3,0.2,{speed:13,damage:2,hp:1.5,mass:2}),
+									new Barrel(5,33,0,1,owner,0.075,0,0.1,{speed:13,damage:2,hp:1.5,mass:2,size:1.5})
+								]
+							}
+						}
+					}
+					this.maxBots = 0;
+					this.allowedBotTeams = [ 1, 2 ];
+					this.upgradeBox = document.createElement("div");
+					this.upgradeBox.style.position="absolute";
+					this.upgradeBox.style.bottom="0px";
+					this.upgradeBox.style.display="flex";
+					this.upgradeBox.style.justifyContent="flex-start";
+					this.upgradeBox.classList.add("bottom-left-gui-container");
+					this.upgradeBox.innerHTML="<div class='chat-commands'></div><div class='upgrades'></div>";
+					document.body.appendChild(this.upgradeBox);
+					this.botRammerClasses = [ this.tankClasses.tri_angle, this.tankClasses.flank_guard, this.tankClasses.booster, this.tankClasses.fighter ];
+					this.botMatchingStats = [
+						[
+							"tank_hp",
+							"tank_regen",
+							"tank_damage"
+						],
+						[
+							"bullet_damage",
+							"bullet_hp",
+							"tank_reload",
+							"bullet_speed"
+						]
+					];
+					this.notifBox = document.createElement("div");
+					this.notifBox.classList.add("top-gui-container");
+					this.notifBox.innerHTML="<div class='class-upgrades'></div><div class='notifs'></div><div class='topright'><div></div><div><div class='killfeed'></div></div></div>";
+					document.body.appendChild(this.notifBox);
+					this.damageTypes = {
+						shoot: () => {
+							return true;
+						},
+						ram: () => {
+							return true;
+						},
+						drone: ()=>{
+							return true;
+						},
+						trap: ()=>{
+							return true;
+						}
+					};
+					let ckm=(list)=>list.map((it)=>{return{action:()=>{this.localPlayer.say(it)},text:it}});
+					this.chatCommands = {
+						"x": ["Help!","Thanks!","Go! Go! Go!","Incoming!","1v1?","2v1?","Team with me","Chill out","Unfair"],
+						"z": ["Good job!","Yes","No","We need to regroup","We're goated"]
+					};
+					let tf=(id,name)=>{
+						if(this.localPlayer.flags.includes(id)) {
+							this.localPlayer.flags.splice(this.localPlayer.flags.indexOf(id),1);
+							this.notif(name+" off",3,"lightgray","gray");
+						}
+						else {
+							this.localPlayer.flags.push(id);
+							this.notif(name+" on",3,"lightgreen","darkgreen");
+						}
+					}
+					this.godModeCacheLastHealingRate=null;
+					document.body.addEventListener("keydown",(e)=>{
+						if(this.localPlayer==null) return;
+						if(e.key=="c") {
+							tf("auto_spin","auto spin");
+						}
+						if(e.key=="e") {
+							tf("auto_fire","auto fire");
+						}
+						if(this.chatCommands[e.key]) game.numberMenu(ckm(this.chatCommands[e.key]));
+						if(e.key=="g"){
+							if(this.localPlayer.healingRate==0){
+								this.localPlayer.healingRate=this.godModeCacheLastHealingRate;
+								this.localPlayer.hp=this.localPlayer.maxhp;
+							}
+							else {
+								this.godModeCacheLastHealingRate=this.localPlayer.healingRate;
+								this.localPlayer.healingRate=0;
+								this.localPlayer.hp=-1;
+							}
+						}
+						if(e.key=="h"){
+							if(this.localPlayer instanceof Dominator||this.localPlayer instanceof Mothership) {
+								this.localPlayer.flags.splice(this.localPlayer.flags.indexOf("local_player"),1);
+								this.localPlayer.flags.splice(this.localPlayer.flags.indexOf("game_camera_target"),1);
+								this.gui.showSplash();
+							}
+							else {
+								let a=this.tanks.find((t)=>t instanceof Mothership);
+								if(!a) { 
+									a=this.bases.find((b)=>b instanceof DominatorBase&&b.team==this.localPlayer.team);
+									if(a) a = a.dominator;
+								}
+								if(a) {
+									this.localPlayer.flags.splice(this.localPlayer.flags.indexOf("local_player"),1);
+									this.localPlayer.flags.splice(this.localPlayer.flags.indexOf("game_camera_target"),1);
+									a.flags.push("local_player","game_camera_target");
+								}
+							}
+						}
+					});
+					this.levelcap = 60;
+					this.notif("connecting...",5,"lightgray","gray");
+					this.endpoint = endpoint;
+					this.socket = io(endpoint);
+					this.netOldClassMap = {
+						"Tank": Tank,
+						"Bullet": Bullet,
+						"ArenaCloser": ArenaCloser,
+						"Dominator": Dominator,
+						"LevelingTank": LevelingTank,
+						"FallenBooster": FallenBooster,
+						"Mothership": Mothership,
+						"Drone": Drone,
+						"Trap": Trap,
+						"Polygon": Polygon,
+						"Square": Square,
+						"Triangle": Triangle,
+						"Pentagon": Pentagon,
+						"AlphaPentagon": AlphaPentagon,
+						"Necromancer": Necromancer,
+						"FallenOverlord": FallenOverlord
+					};
+					this.netSendingSpeed = 50;
+					this.netRecievingSpeed = 2000;
+					this.lastPayloadTime = -99;
+					this.id=null;
+					this.socket.on("id",(id)=>{
+						this.id = id;
+					});
+					this.socket.on("danjaye_data",(d)=>{
+						for(let ta of d) {
+							let t = this.tanks.find((t)=>t.id==ta.id);
+							if(t==null) {
+								console.log(ta._constructor);
+								if(this.netOldLongConstructorClasses.includes(ta._constructor)) t = new this.netOldClassMap[ta._constructor](ta.maxhp,ta.size,ta.name,ta.visualLevel,this,ta.team);
+								if(this.netOldShortConstructorClasses.includes(ta._constructor)) t = new this.netOldClassMap[ta._constructor](this,ta.x,ta.y,ta.direction);
+								t.id = ta.id;
+								this.addTank(t);
+							}
+							if(!t.flags.includes("local_player_control")) {
+								t.x = ta.x;
+								t.y = ta.y;
+								t.direction = ta.direction;
+								t.team = ta.team;
+								t.xp = ta.xp;
+								t.hp = ta.hp;
+								t.maxhp = ta.maxhp;
+								t.messages=ta.messages;
+								t.name=ta.name;
+								t.size=ta.size;
+								t.velocity=ta.velocity;
+								t.barrels=[];
+								for(let b of ta.barrels) {
+									t.addBarrel(new Barrel(b.width,b.length,b.rotation,b.firePriority,t,b.firerate,b.horizOffset,b.recoil,b.bullet,this.netOldClassMap[b.bulletConstructor],b.maxDrones,b.spread,b.funnelAngle,b.vertOffset,b.reloadBeforeFiringOtherBarrels,b.canControlDrones));
+								}
+								if(ta._constructor=="LevelingTank")t.upgrades=ta.upgrades;
+								t.bodyDamage=ta.bodyDamage;
+							}
+						}
+					});
+					this.socket.on("danjaye_delete",(d)=>{
+						this.tanks.find((t)=>t.id==d).destroy();
+					});
+					this.flags=[];
+					this.connected=false;
+					this.delegatedIDs = {};
+					this.socket.on("danjaye_join",(d)=>{
+						this.players.push(d);
+						if(this.flags.includes("local_player_control")) {
+							this.delegate(d);
+						}
+					});
+					this.socket.on("danjaye_delegate",(d)=>{
+						if(!this.flags.includes("local_player_control")) {
+							if(!Array.isArray(this.delegatedIDs)) this.delegatedIDs = [];
+							this.delegatedIDs.push(d);
+						}
+					});
+					this.socket.on("danjaye_host_status",(s)=>{
+						let idx = this.flags.indexOf("local_player_control");
+						if(s) {
+							if(idx==-1) {
+								this.flags.push("local_player_control");
+							}
+							this.notif("Now hosting a game",15,"lightgreen","darkgreen");
+						}
+						else {
+							if(idx>=0) {
+								this.flags.splice(idx,1);
+								this.notif("No longer hosting a game",5,"lightgray","gray");
+							}
+						}
+					});
+					this.socket.on("danjaye_request_fire",(d)=>{
+						if(this.flags.includes("local_player_control")) {
+							this.tanks.find((t)=>t.id==this.delegatedIDs[d.id][0]).barrels.filter((b)=>b.firePriority==d.barrel).forEach((b)=>{b.fire();});
+						}
+					});
+					this.socket.on("disconnect",()=>{
+						this.notif("disconnected from server",7,"indianred");
+					});
+					this.socket.on("connect",()=>{
+						this.notif("connected to server",7);
+					});
+					this.socket.on("connect_error",(e)=>{
+						this.notif("can't connect to server: "+e,7,"indianred");
+					});
+					this.spawning = [
+						{
+							classes: [Square,Square,Square,Square,Square,Square,Square,Square,Square,Square,Square,Square,Triangle,Triangle,Pentagon],
+							lastTime: -999,
+							condition: (x,y)=>game.flags.includes("rule.spawn_polygons")&&game.tanks.filter((t)=>t instanceof Polygon).length < 200 * game.width/2500,
+							pickX: ()=>Math.random()*game.width-game.width/2,
+							pickY: ()=>Math.random()*game.height-game.height/2,
+							frequency: 100
+						},
+						{
+							classes: [Pentagon,Pentagon,Pentagon,Pentagon,AlphaPentagon],
+							lastTime: -999,
+							condition: (x,y)=>game.flags.includes("rule.spawn_polygons")&&game.tanks.filter((t)=>t instanceof AlphaPentagon).length < 7,
+							pickX: ()=>(200-400*Math.random())*game.width/1500,
+							pickY: ()=>(200-400*Math.random())*game.width/1500,
+							frequency: 5000
+						},
+						{
+							classes: [Necromancer,FallenBooster,FallenOverlord],
+							lastTime: -999,
+							condition: ()=>game.flags.includes("rule.spawn_bosses"),
+							pickX: ()=>Math.random()*game.width-game.width/2,
+							pickY: ()=>Math.random()*game.height-game.height/2,
+							frequency: 300000
+						}
+					];
+					this.players = [];
+					this.botClassSpinEligible = [ this.tankClasses.octo_shot ];
+					this.delta = 10;
+					this.lastFrameTime = -10;
+					this.modes={
+						ffa: ()=>{
+							this.allowedBotTeams=[];
+							this.width=2000;
+							this.height=2000;
+							this.resetRoundEndBehavior();
+							this.startRound(60000*60);
+						},
+						_2_teams: ()=> {
+							this.width=3000;
+							this.height=2000;
+							this.allowedBotTeams=[1,2];
+							this.addBase(new Base(this,1,1100,1000,400,2000));
+							this.addBase(new Base(this,2,-1500,1000,400,2000));
+							this.resetRoundEndBehavior();
+							this.startRound(60000*60);
+						},
+						_4_teams: ()=>{
+							this.width=3000;
+							this.height=3000;
+							this.allowedBotTeams=[1,2,3,4];
+							this.addBase(new Base(this,1,750,1500,750,750));
+							this.addBase(new Base(this,2,-1500,1500,750,750));
+							this.addBase(new Base(this,3,750,-750,750,750));
+							this.addBase(new Base(this,4,-1500,-750,750,750));
+							this.resetRoundEndBehavior();
+							this.startRound(60000*60);
+						},
+						domination: ()=>{
+							this.allowedBotTeams=[1,2];
+							this.width=4000;
+							this.height=4000;
+							this.addBase(new Base(this,1,1250,-1250,750,750));
+							this.addBase(new Base(this,2,-2000,2000,750,750));
+							let sw = new DominatorBase(this,0,-1000,-500,500,500);
+							this.addBase(sw);
+							let ne = new DominatorBase(this,0,500,1000,500,500);
+							this.addBase(ne);
+							let se = new DominatorBase(this,0,500,-500,500,500);
+							this.addBase(se);
+							let nw = new DominatorBase(this,0,-1000,1000,500,500);
+							this.addBase(nw);
+							function allEquals(...args) {
+								return args.every((a)=>a==args[0]);
+							}
+							this.resetRoundEndBehavior();
+							this.roundEndNotif = ()=>{
+								this.notif(this.getTeam(sw.team).name +" has won the game!",7,this.getTeam(sw.team).color);
+							}
+							this.isRoundWon = ()=>{
+								return allEquals(sw.team,ne.team,se.team,nw.team)&&sw.team!=0;
+							};
+							this.startRound(300000*2);
+						},
+						maze: ()=>{
+							this.allowedBotTeams=[];
+							this.width=3000;
+							this.height=3000;
+							",".repeat(100).split(",").forEach((z,i)=>{
+								if(Math.random()*100>50+Math.random()*50) {
+									let wall = game.summon(Wall,true);
+									let c=Math.floor(i/10);
+									wall.x=(-game.width/2+wall.size/2)+i*wall.size*1.44-(c*wall.size*1.44)*10;
+									wall.y=(game.height/2-wall.size/2)-c*wall.size*1.44;
+								}
+							});
+							this.resetRoundEndBehavior();
+							this.startRound(60000*60);
+						},
+						mothership: ()=>{
+							this.allowedBotTeams=[1,2];
+							this.width=4000;
+							this.height=4000;
+							this.resetRoundEndBehavior();
+							this.startRound(300000*2);
+						},
+						tag: ()=>{
+							this.allowedBotTeams=[1,2,3,4];
+							this.width=2500;
+							this.height=2500;
+							this.resetRoundEndBehavior();
+							/*let f=function(e){
+								e.tank.addEventListener("damage",function(){
+									if(this.hp==0){
+										
+									}
+								});
+							}
+							this.roundEventListeners.push({ name: "tankadded", func: f });
+							this.addEventListener("tankadded",f);*/
+							this.startRound(300000*2);
+						}
+					};
+					this.roundStartTime = -99999;
+					this.roundTime = 0;
+					this.roundTimerNode = null;
+					this.isRoundWon=()=>false;
+					this.roundEndNotif=()=>null;
+					this.registerEvent("tankadded");
+					this.roundEventListeners = [];
+					this.netOldLongConstructorClasses=["LevelingTank","Tank","Bullet","Drone","Trap"];
+					this.netOldShortConstructorClasses=["ArenaCloser","Dominator","FallenBooster","Mothership","Polygon","Square","Triangle","Pentagon","AlphaPentagon","Necromancer","FallenOverlord"];
+					let szm=(b,c,f,...c2)=> f.call(b.game.tanks,c)&&c2.every((z)=>z==true)?c(b):false;
+					this.botFocuses = {
+						attack: (bot)=>true,
+						farmPolygons: (bot)=>true,
+						killDominator: (bot)=>szm(bot,(t)=>t instanceof Dominator&&(t.team!=bot.team||bot.team==null),game.tanks.find,bot.visualLevel>=30),
+						killMothership: (bot)=>bot.visualLevel>=30&&game.tanks.find((t)=>t instanceof Mothership&&(t.team!=bot.team||bot.team==null)),
+						killBoss: (bot)=> bot.visualLevel>=45,
+						killLeader: (bot)=>this.tanks.find((t)=>this.isLeader(t)&&(t.team!=bot.team||bot.team==null)),
+						socialize: (bot)=>false
+					}
+					
+					this.mods=[];
+					this.refreshModsCache();
+					setTimeout(()=>{if(this.mods.length>0){this.notif("loading mods...");this.initMods();this.notif("done loading mods");}},10);
+				}
+				
+				addMod(name,func,meta={}) {
+					this.mods.push({ name: name, func: func.toString(), meta: meta });
+					this.saveModsStorage();
+				}
+				
+				refreshModsCache() {
+					this.mods=this.getModsStorage();
+				}
+				
+				initMods() {
+					this.mods.forEach((m)=>{
+						m.game=this;
+						let v=this.gui.getPreference(this.gui.getStorage(),"mod."+m.name);
+						if(v&&v.value){
+							try{
+								Function("(function(){"+m.func+"}).call(this)").call(m);
+							}catch(e){this.notif(m.name+": "+e,22,"indianred");}
+						}
+					});
+				}
+				
+				saveModsStorage() {
+					this.setModsStorage(this.mods.map((m)=>{delete m.game;return m;}));
+				}
+				
+				getModsStorage() {
+					if(!localStorage.getItem("dtg_mods")) this.setModsStorage([]);
+					return JSON.parse(localStorage.getItem("dtg_mods"));
+				}
+				
+				setModsStorage(mods) {
+					localStorage.setItem("dtg_mods",JSON.stringify(mods));
+				}
+				
+				removeMod(idx) {
+					this.mods.splice(idx,1);
+					this.saveModsStorage();
+				}
+				
+				async publishMod(m) {
+					return new Promise((r)=>{
+						this.socket.once("danjaye_error",(z)=>{
+							r(z);
+						});
+						this.socket.once("danjaye_notif",(z)=>{
+							r(z);
+						});
+						this.socket.emit("danjaye_publish_mod",m);
+					});
+				}
+				
+				resetRoundEndBehavior() {
+					this.roundEventListeners.forEach((el)=>{
+						this.removeEventListener(el.name,el.func);
+					});
+					this.roundEventListeners=[];
+					this.isRoundWon=()=>false;
+					this.roundEndNotif=()=>null;
+				}
+				
+				setMode(mode) {
+					this.bases=[];
+					this.tanks=[];
+					this.mode=mode;
+					this.mode();
+				}
+				
+				delegate(pid) {
+					let id = this.nextID();
+					this.socket.emit("danjaye_delegate",{
+						player: pid,
+						id: id
+					});
+					if(Array.isArray(this.delegatedIDs)) this.delegatedIDs = {};
+					if(!this.delegatedIDs[pid]) this.delegatedIDs[pid] = [];
+					this.delegatedIDs[pid].push(id);
+				}
+				
+				getDelegate(id) {
+					for(let [k,v] of Object.entries(this.delegatedIDs)) {
+						if(v==id) return k;
+					}
+					return null;
+				}
+				
+				createKillfeedUserBox(tank) {
+					let d = document.createElement("div");
+					d.innerHTML="<b>danjaye</b><small></small>";
+					d.querySelector("b").innerText=tank.name||"an unnamed tank";
+					d.querySelector("b").innerHTML+=(this.isLeader(tank)?"<tag>#1</tag>":"");
+					if(tank.class!=null) d.querySelector("small").innerText="level "+tank.visualLevel+" "+this.getClassName(tank);
+					d.style.color = tank.game.getTeam(tank.team).color;
+					return d;
+				}
+				
+				killfeed(tank,defeated,helper=null) {
+					let c=(g)=>(g instanceof Bullet)||g instanceof Polygon;
+					if((c(tank)&&!(tank instanceof Polygon)&&(tank.owner==null||!(tank.owner instanceof Base)))||c(defeated)) return;
+					let z=(x)=>x==tank.game.localPlayer&&tank.game.localPlayer!=null;
+					let hs = [];
+					for(let [k,v] of defeated.damagers.entries()) {
+						if(k!=tank&&(!(k instanceof Bullet)||k.owner!=tank)&&new Date().getTime()<=v.lastDamageTime+7000) hs.push({damager:k,data:v});
+					}
+					hs.sort((a,b)=>b.data.lastDamageTime-a.data.lastDamageTime);
+					if(hs.length>0) helper = hs[0].damager instanceof Bullet ? hs[0].damager.owner : hs[0].damager;
+					let d = this.createKillfeedUserBox(tank);
+					let f = this.createFadingElement("",5);
+					if(z(tank)||z(defeated)||z(helper)) {
+						f.classList.add("highlight");
+					}
+					f.appendChild(this.createKillfeedUserBox(tank));
+					if(helper!=null) {
+						f.innerHTML+=" + ";
+						f.appendChild(this.createKillfeedUserBox(helper));
+					}
+					let t=null;
+					if(defeated.damagers.has(tank)) t = defeated.damagers.get(tank).type;
+					f.innerHTML+=" " + (t!=null&&t==game.damageTypes.ram?"rammed":(t==game.damageTypes.drone?"'s drones rammed":(t==game.damageTypes.trap?"trapped":"shot"))) + " ";
+					/*f.innerHTML+="<canvas></canvas><canvas></canvas>";
+					this.renderTankClass(f.querySelector("canvas").getContext("2d"),tank.class,(tza)=>{
+						tza.team=tank.team;
+						tza.size=15 + (tank.visualLevel/45) * 15;
+						if(tank.visualLevel>=45) tza.size=30;
+						if(t==game.damageTypes.ram) tza.direction=-90;
+					});
+					this.renderTankClass(f.querySelector("canvas:last-child").getContext("2d"),defeated.class,(tza)=>{
+						tza.team=defeated.team;
+						tza.size=15 + (defeated.visualLevel/45) * 15;
+						if(defeated.visualLevel>=45) tza.size=30;
+					});*/
+					f.appendChild(this.createKillfeedUserBox(defeated));
+					this.notifBox.querySelector(".killfeed").prepend(f);
+				}
+				
+				notif(text,timeOnScreen=15,background="",textColor="") {
+					let n=this.createFadingElement(text,timeOnScreen,background,textColor);
+					this.notifBox.querySelector(".notifs").prepend(n);
+					return n;
+				}
+				
+				destroyRoundTimerNode() {
+					if(!this.roundTimerNode) return;
+					this.roundTimerNode.remove();
+					this.roundTimerNode=null;
+				}
+				
+				startRound(time) {
+					if(this.roundTimerNode) { this.destroyRoundTimerNode(); }
+					this.roundTime = time;
+					this.roundStartTime = new Date().getTime();
+					this.roundTimerNode = this.notif("timer",(time/1000)*2);
+				}
+				
+				endRound() {
+					if(this.isClosed()||this.isClosing()) return;
+					this.destroyRoundTimerNode();
+					if(this.isRoundWon()) this.roundEndNotif();
+					setTimeout(()=>{if(!this.isClosed()&&!this.isClosing())this.closeArena();},3000);
+				}
+				
+				addRoundTime(time) {
+					this.roundTime += time;
+				}
+				
+				getRemainingRoundTime() {
+					return this.roundTime-(new Date().getTime()-this.roundStartTime);
+				}
+				
+				renderRoundTimer() {
+					if(!this.roundTimerNode) return;
+					let time = this.getRemainingRoundTime();
+					let s = time/1000;
+					let m = Math.ceil(s/60);
+					let sim = Math.floor(60-((m*60)-s));
+					this.roundTimerNode.innerText=(m-1)+":"+(String(sim).length==1?"0":"")+sim;
+				}
+				
+				roundTick() {
+					if(this.roundTime==0) return;
+					if(this.isRoundWon()||this.getRemainingRoundTime()<=0) {
+						this.endRound();
+					}
+				}
+				
+				createFadingElement(text,timeOnScreen=3,background="",textColor="") {
+					let n = document.createElement("div");
+					n.innerText=text;
+					n.style.background=background;
+					n.style.color=textColor;
+					n.style.display
+					let i = 0;
+					n.style.transform="translateY(5px)";
+					let iv = null;
+					iv=setInterval(()=>{
+						let mt = (timeOnScreen*1000)/10;
+						if(i>mt/2) {
+							let gi=(i-mt/2);
+							n.style.transform ="translateY("+(5-(gi>5?5:gi))+"px)";
+							n.style.opacity = 1-(gi*0.1);
+							if(i>mt) {
+								n.remove();
+								clearInterval(iv);
+							}
+						}
+						else {
+							n.style.transform ="translateY("+(0+(i>5?5:i))+"px)";
+							n.style.opacity = i*0.1;
+						}
+						i++;
+					},10);
+					return n;
+				}
+				
+				renderTankClass(ctx,tankclass,f=()=>{}) {
+					let tank = new LevelingTank(-1,40,"tank",0,game,1);
+					tank.x=this.x;
+					tank.y=this.y;
+					tank.setClass(tankclass);
+					ctx.lineWidth=10;
+					f(tank);
+					tank.render(ctx);
+				}
+				
+				renderTankPathways() {
+					let cu = this.notifBox.querySelector(".class-upgrades");
+					cu.innerHTML="";
+					this.tankClassPathways.get(this.localPlayer.class).filter((z)=>z.level<=this.localPlayer.visualLevel).forEach((z)=>{
+						let za=document.createElement("div");
+						za.innerHTML="<canvas></canvas><p>"+z._class.name+"</p>";
+						this.renderTankClass(za.querySelector("canvas").getContext("2d"),z._class,(t)=>{t.size=20;});
+						za.onclick=()=>{game.localPlayer.setClass(z._class);cu.innerHTML="";}
+						cu.appendChild(za);
+					});
+					
+				}
+				
+				fixContext() {
+					this.ctx = this.canvas.getContext("2d");
+					this.ctx.lineWidth = 10;
+					this.ctx.fillStyle = "white";
+				}
+				
+				updateInfoBoxName(name) {
+					this.pInfoBox.querySelector("h1").innerText=name;
+				}
+				
+				updateScorebarText(txt) {
+					this.pInfoBox.querySelector("span").innerText=txt;
+				}
+				
+				updateScorebarProgress(p) {
+					this.pInfoBox.querySelector("span+div").style.width = (p*98)+"%";
+				}
+				
+				updateRankbarText(txt) {
+					this.pInfoBox.querySelector(".rankbar span").innerText=txt;
+				}
+				
+				updateRankbarProgress(p) {
+					this.pInfoBox.querySelector(".rankbar span+div").style.width = (p*98)+"%";
+				}
+				
+				nextID() {
+					let i=null;
+					let id=0;
+					while(i==null) {
+						if(!this.tanks.find((t)=>t.id==id&&t.flags.includes("local_player_control"))) {
+							let t = this.tanks.find((t)=>t.id==id);
+							if((this.flags.includes("local_player_control")&&!this.getDelegate(id))||(!this.flags.includes("local_player_control")&&this.getDelegate(id)&&t==null)) {
+								if(t!=null) t.destroy();
+								i=id;
+							}
+						}
+						id++;
+					}
+					return i;
+				}
+				
+				addTank(tank) {
+					try {
+						if(this.flags.includes("local_player_control")) {
+							if(tank.id==null) {
+								tank.id = this.nextID();
+							}
+						}
+						else if(tank.flags.includes("local_player_control")) {
+							if(!Array.isArray(this.delegatedIDs)) this.delegatedIDs = [];
+							if(this.delegatedIDs.length==0) throw new Error("No delegated IDs to add such tank");
+							tank.id = this.delegatedIDs.find((id)=>!this.tanks.find((t)=>t.id==id));
+							if(tank.id==null) throw new Error("All delegated IDs are taken");
+						}
+						else if(tank.id==null) {
+							throw new Error("Cannot add tank!");
+						}
+						this.tanks.push(tank);
+						this.fireEvent("tankadded",{ tank: tank });
+					}
+					catch(e) {
+						if(e.message=="Cannot add tank!") return;
+						this.notif(e.message,4,"pink","indianred");
+					}
+				}
+				
+				tick() {
+					for(let g of this.garbageCollection) {
+						if(this.tanks.includes(g)) this.tanks.splice(this.tanks.indexOf(g),1);
+						this.garbageCollection.splice(this.garbageCollection.indexOf(g),1);
+					}
+					this.localPlayer = this.tanks.find((t)=>t.flags.includes("local_player"));
+					this.bots = this.tanks.filter((t)=>t.flags.includes("bot"));
+					if(this.flags.includes("local_player_control")) {
+						for(let s of this.spawning) {
+							if(new Date().getTime()>s.lastTime+s.frequency&&s.condition()) {
+								s.lastTime=new Date().getTime();
+								let z=new s.classes[Math.round(Math.random()*(s.classes.length-1))](game,s.pickX(),s.pickY());
+								z.addFlag("local_player_control");
+								game.addTank(z);
+							}
+						}
+						for(let base of this.bases) {
+							base.tick();
+						}
+					}
+					for(let tank of this.tanks) {
+						if(tank.flags.includes("local_player_control")/*||(tank.owner&&tank.owner.flags.includes("local_player_control"))*/) {
+							if(!tank.flags.includes("local_player")) tank.behaviorTick();
+							tank.tick();
+							tank.damageTick();
+						}
+					}
+					if(this.players.length>0&&new Date().getTime()>this.lastPayloadTime+this.netSendingSpeed) {
+						this.socket.emit("danjaye_data",this.constructPayload());
+						this.lastPayloadTime=new Date().getTime();
+					}
+					this.delta = new Date().getTime() - this.lastFrameTime;
+					this.lastFrameTime = new Date().getTime();
+					this.roundTick();
+				}
+				
+				getNonRecursive(b) {
+					let br = {};
+					for(let [k,v] of Object.entries(b)) {
+						if(!["owner","game","drones","bulletConstructor"].includes(k)) br[k]=v;
+						if(["bulletConstructor"].includes(k)) br[k]=v.name;
+					}
+					return br;
+				}
+				
+				constructPayload() {
+					let payload=[];
+					for(let tank of this.tanks.filter((t)=>t.flags.includes("local_player_control")||this.flags.includes("local_player_control"))) {
+						let t={};
+						t.id=tank.id;
+						t.x=tank.x;
+						t.y=tank.y;
+						t.direction=tank.direction;
+						t.size=tank.size;
+						t.xp=tank.xp;
+						t.barrels=tank.barrels.map((b)=>{
+							return this.getNonRecursive(b);
+						});
+						t.team=tank.team;
+						t.messages=tank.messages;
+						t.maxhp=tank.maxhp;
+						t.hp=tank.hp;
+						t.name=tank.name;
+						t.velocity=tank.velocity;
+						t._constructor = tank.constructor.name;
+						if(tank instanceof LevelingTank)t.upgrades=tank.upgrades;
+						t.visualLevel=tank.visualLevel;
+						t.bodyDamage=tank.bodyDamage;
+						payload.push(t);
+					}
+					return payload;
+				}
+				
+				splitClassName(name) {
+					let sofar="";
+					let SussedName = name;
+					let i =0;
+					for(let l of name) {
+						if(l==l.toUpperCase()&&i!=0) {
+							SussedName = SussedName.replace(sofar,sofar+" ");
+							sofar="";
+						}
+						sofar+=l;
+						i++;
+					}
+					return SussedName;
+				}
+				
+				getClassName(t) {
+					return (t.class!=null?t.class.name:this.splitClassName(t.constructor.name)).replace("_"," ")+(Object.values(this.tankClasses).includes(t.class)?"":" "+t.constructor.name);
+				}
+				
+				render() {
+					this.ctx.beginPath();
+					if(this.localPlayer) {
+						this.updateScorebarText("Level " + this.localPlayer.visualLevel + (this.localPlayer instanceof LevelingTank ? ". " +this.localPlayer.notXP + "/" + this.localPlayer.requiredXPForNextLevel + " XP" : ""));
+						let d = this.localPlayer.notXP/this.localPlayer.requiredXPForNextLevel;
+						this.updateScorebarProgress(d > 1 ? 1 : d);
+						let r = this.localPlayer.visualLevel;
+						this.updateRankbarText((this.localPlayer instanceof LevelingTank?(r>=45?"Expert":(r>=30?"Intermediate":(r>=15?"Beginner":"Novice")))+" ":"") + this.getClassName(this.localPlayer));
+						this.updateInfoBoxName(this.localPlayer.name);
+						this.updateRankbarProgress(this.localPlayer.visualLevel/60);
+						if(/*this.localPlayer instanceof LevelingTank&&*/this.localPlayer.requiresVisualUpgradesUpdate) {
+							this.localPlayer.requiresVisualUpgradesUpdate=false;
+							this.upgradeBox.querySelector(".upgrades").innerHTML="";
+							if(this.localPlayer.upgradePoints>=1) {
+								this.upgradeBox.querySelector(".upgrades").innerHTML+="<h1></h1>";
+								this.upgradeBox.querySelector(".upgrades h1").innerText="x"+Math.floor(this.localPlayer.upgradePoints);
+							}
+							let i =0;
+							for(let u of this.localPlayer.upgrades) {
+								let e = document.createElement("div");
+								e.id="game.upgrade."+u.id;
+								e.game = this;
+								e.innerHTML="<small></small><div class='progressbar'><div>"+"<div></div>".repeat(u.max)+"</div><button>+</button></div>";
+								e.querySelector("small").innerText=u.name+" ["+(i+1)+"]";
+								e.querySelector("button").onclick=function() {
+									let gz=this.closest("div:has(>.progressbar)");
+									gz.game.localPlayer.upgrade(gz.id.split(".")[2]);
+								}
+								this.upgradeBox.querySelector(".upgrades").appendChild(e);
+								Array.from(e.querySelectorAll(".progressbar>div>div, button")).forEach((c)=>{if((c.tagName=="DIV"&&Array.from(c.parentElement.children).indexOf(c)>=u.value)||((u.value>=u.max||this.localPlayer.upgradePoints<1)&&c.tagName=="BUTTON")){c.setAttribute("disabled",true);return};c.style.background=u.color;});
+								i++;
+							}
+							this.renderTankPathways();
+						}
+						if((this.mouse.x < document.body.clientWidth/6 && this.mouse.y < document.body.clientHeight*1.5)||(this.localPlayer instanceof LevelingTank&&this.localPlayer.upgradePoints>=1)) {
+							this.upgradeBox.querySelector(".upgrades").classList.add("show");
+						}
+						else {
+							this.upgradeBox.querySelector(".upgrades").classList.remove("show");
+						}
+					}
+					else {
+						this.upgradeBox.querySelector(".upgrades").innerHTML="";
+					}
+					this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+					this.ctx.rect(this.canvas.width/2-this.x-this.width/2,this.canvas.height/2+this.y-this.height/2,this.width,this.height);
+					this.ctx.fillStyle=document.body.classList.contains('dark')?"#151515":"whitesmoke";
+					this.ctx.fill();
+					for(let base of this.bases) {
+						base.render(this.ctx);
+					}
+					for(let tank of this.tanks) {
+						if(tank.x-tank.size*1.8<this.x+document.body.clientWidth/2&&tank.x+tank.size*1.8>this.x-document.body.clientWidth/2&&tank.y-tank.size*1.8<this.y+document.body.clientHeight/2&&tank.y+tank.size*1.8>this.y-document.body.clientHeight/2) {
+							this.ctx.beginPath();
+							tank.render(this.ctx);
+						}
+					}
+					for(let tank of this.tanks) {
+						let p = true;
+						if(this.gui!=null) p = this.gui.getPreference(this.gui.getStorage(),"show_health_all_tanks").value;
+						if(tank instanceof Tank&&tank.hp<tank.maxhp&&tank.hp>=0&&(p||(!(tank instanceof Bullet)))) this.renderHealthbar(this.canvas.width/2+tank.x-this.x,this.canvas.height/2+this.y-tank.y,30,35,5,tank.hp/tank.maxhp);
+						this.gui.ensurePrefInStorage("show_data_all_tanks");
+						if(this.gui!=null) p = this.gui.getPreference(this.gui.getStorage(),"show_data_all_tanks").value;
+						this.ctx.font="900 10px sans-serif";
+						if(p||(!(tank instanceof Bullet)&&!(tank instanceof Polygon)&&!(tank instanceof Wall))) {
+							this.ctx.fillStyle="black";
+							let kz=0;
+							if(this.isLeader(tank)) {
+								this.ctx.beginPath();
+								this.ctx.roundRect(this.canvas.width/2+tank.x-this.x+this.ctx.measureText(tank.name).width/2-5,this.canvas.height/2+this.y-tank.y-30-tank.size,25,13,[20]);
+								this.ctx.closePath();
+								this.ctx.fill();
+								this.ctx.fillStyle="white";
+								this.ctx.fillText("#1",this.canvas.width/2+tank.x-this.x+this.ctx.measureText(tank.name).width/2,this.canvas.height/2+this.y-tank.y-20-tank.size);
+								this.ctx.fillStyle="black";
+								kz=10;
+							}
+							this.ctx.fillStyle="black";
+							this.ctx.fillText(tank.name,this.canvas.width/2+tank.x-this.x-this.ctx.measureText(tank.name).width/2-kz,this.canvas.height/2+this.y-tank.y-20-tank.size);
+							this.ctx.fillText(tank.xp,this.canvas.width/2+tank.x-this.x-this.ctx.measureText(tank.xp).width/2,this.canvas.height/2+this.y-tank.y-10-tank.size);
+							if(p) {
+								this.ctx.fillText("HP "+Math.round(tank.hp),this.canvas.width/2+tank.x-this.x-this.ctx.measureText("HP "+Math.round(tank.hp)).width/2,this.canvas.height/2+this.y-tank.y+30+tank.size);
+							}
+						}
+						let i=0;
+						for(let m of tank.messages.filter((m)=>new Date().getTime()>m.created+m.time*1000)) {
+							tank.messages.splice(tank.messages.indexOf(m),1);
+						}
+						for(let m of tank.messages.toReversed()){
+							let mt = this.ctx.measureText(m.text);
+							this.ctx.fillStyle=this.isLeader(tank)?"black":"lightgray";
+							this.ctx.beginPath();
+							this.ctx.roundRect(this.canvas.width/2+tank.x-this.x-mt.width/2-5,this.canvas.height/2+this.y-tank.y-40-tank.size-i*20,mt.width+10,13,[20]);
+							this.ctx.closePath();
+							this.ctx.fill();
+							this.ctx.fillStyle=this.isLeader(tank)?"white":"black";
+							this.ctx.fillText(m.text,this.canvas.width/2+tank.x-this.x-mt.width/2,this.canvas.height/2+this.y-tank.y-30-tank.size-i*20);
+							i++;
+						}
+					}
+					this.renderRoundTimer();
+				}
+				
+				numberMenu(items) {
+					let m = document.createElement("ol");
+					let i=1;
+					for(let it of [...items,{text:"Cancel",action:()=>{}}]) {
+						let l = document.createElement("li");
+						l.innerText=(i==items.length+1?0:i)+". "+it.text;
+						m.appendChild(l);
+						i++;
+					}
+					let ev=null;
+					ev=(e)=>{
+						let i = e.key=="0"?{text:"Cancel",action:()=>{}}:items[parseInt(e.key)-1];
+						let rn = !this.upgradeBox.querySelector(".chat-commands").contains(m);
+						if(i||rn) {
+							m.remove();
+							if(!rn) i.action();
+							document.body.removeEventListener("keydown",ev);
+						}
+					};
+					document.body.addEventListener("keydown",ev);
+					this.upgradeBox.querySelector(".chat-commands").innerHTML="";
+					this.upgradeBox.querySelector(".chat-commands").appendChild(m);
+				}
+				
+				isLeader(tank) {
+					return this.tanks.filter((t)=>t.team==tank.team&&t!=tank&&t.xp>=tank.xp).length==0;
+				}
+				
+				renderHealthbar(x,y,yOffset,width,height,percent) {
+					this.ctx.moveTo(x,y-yOffset);
+					this.ctx.beginPath();
+					this.ctx.rect(x-width/2,y+yOffset,width,height);
+					this.ctx.fillStyle = "black";
+					this.ctx.fill();
+					this.ctx.closePath();
+					this.ctx.beginPath();
+					this.ctx.rect(1+x-width/2,1+y+yOffset,width*percent-2,height-2);
+					this.ctx.fillStyle = "limegreen";
+					this.ctx.fill();
+				}
+				
+				getTeam(team) {
+					let t=this.teams[team];
+					if(!t) t={name:"",color:this.teams[2].color};
+					return t;
+				}
+				
+				makeArenaCloser(x,y) {
+					let ac = new ArenaCloser(this,x,y);
+					ac.addFlag("local_player_control");
+					return ac;
+				}
+				
+				closeArena() {
+					if(this.isClosed()||this.isClosing()) { this.notif("Arena already closed or closing",3); return; }
+					//this.endRound();
+					this.addTank(this.makeArenaCloser(this.height,this.width));
+					this.addTank(this.makeArenaCloser(-this.height,this.width));
+					this.addTank(this.makeArenaCloser(this.height,-this.width));
+					this.addTank(this.makeArenaCloser(-this.height,-this.width));
+					game.notif("Arena closed: No players can join",20,"indianred")
+				}
+				
+				getRandomObjectValue(o) {
+					let rtc = Object.keys(o);
+					return o[rtc[Math.round(Math.random()*(rtc.length-1))]];
+				}
+				
+				makeTank(name,team) {
+					let sussyTank = new LevelingTank(10,15,name,0,this,team);
+					sussyTank.setClass(/*this.getRandomObjectValue(this.tankClasses)*/this.tankClasses.tank);
+					sussyTank.addFlag("local_player_control");
+					let base = this.bases.find((b)=>b.team==sussyTank.team);
+					if(base==null) {
+						sussyTank.x = Math.random()*this.width-this.width/2;
+						sussyTank.y = Math.random()*this.height-this.height/2;
+					}
+					else {
+						sussyTank.x = base.x + (Math.random() *base.width/2);
+						sussyTank.y = base.y - (Math.random()*base.height/2);
+					}
+					return sussyTank;
+				}
+				
+				addBot() {
+					if(this.isClosed()||this.isClosing()||this.tanks.filter((t)=>t.flags.includes("bot")).length>=this.maxBots) return;
+					let getTeamTanks = (a)=>this.tanks.filter((t)=>t.team==a&&t.flags.includes("bot"));
+					let getLeastTankTeam = ()=>this.allowedBotTeams.sort((a,b)=>getTeamTanks(this.allowedBotTeams.indexOf(b)).length-getTeamTanks(this.allowedBotTeams.indexOf(a)).length)[0];
+					let team = this.allowedBotTeams.length==0?null:getLeastTankTeam();//this.allowedBotTeams[Math.round(Math.random()*(this.allowedBotTeams.length-1))];
+					let rn = ["Arena Closer","BigTank","BLU","ShootEmUp","Dominator","Sinbadx","TEAMTEAM","Aurora","ben","CMD","gaben","HeavyWeapons",".","killer","kate","Boss","pet","Fallen Booster",":)",":^)","princess","cupcake","King","xX_Legend_Xx","MONSTER","d","Smash!","XD","bruh",":(","Wesley"];
+					let sussyTank = this.makeTank(rn[Math.round(Math.random()*(rn.length-1))],team);
+					sussyTank.addFlag("bot");
+					sussyTank.upgradePriority = sussyTank.upgrades[Math.ceil(Math.random()*sussyTank.upgrades.length)-1].id;
+					//sussyTank.addXP(Math.round(Math.random()*999));
+					//sussyTank.addXP(16269);
+					sussyTank.behaviorTick=function() {
+						if(this.tankClassIdea==null||this.tankClassIdea==this.class) {
+							let c = this.game.tankClassPathways.get(this.class);
+							if(c) this.tankClassIdea = c[Math.round(Math.random()*(c.length-1))]._class;
+						}
+						let lp = this.game.tanks.filter((t)=>(t.team!=this.team||t.team==null)&&t!=this&&this.distance(t.x,t.y)<100000&&(!t.owner||t.owner!=this)&&!(t instanceof Wall)&&!t.colliders.find((z)=>z instanceof Wall)).toSorted((a,b)=>this.distance(a.x,a.y)-(a.size**2)-this.distance(b.x,b.y)-(b.size**2));
+						let t = lp.find((t)=>(/*!(t instanceof Bullet)&&*/!(t instanceof Polygon)&&((t.hp/t.maxhp)<0.5||(this.hp/this.maxhp)>0.75))||t.bodyDamage>this.hp/10); // tanks
+						if(t==null||this.distance(t.x,t.y)>100000) { 
+							lp = lp.length > 0 ? lp[0] : {x:0,y:0};
+						}
+						else {
+							lp = t;
+						}
+						if(lp!=null) {
+							let moveReverse = (this.flags.includes("bot_rammer") && this.hp/this.maxhp>0.5 && !this.game.botRammerClasses.includes(this.class)) || ((this.game.botRammerClasses.includes(this.class) && this.hp/this.maxhp<=0.5));
+							this.direction += (-this.direction - (this.getDirectionTowards(lp.x,lp.y) + (moveReverse?180:1)));
+							if(this.distance(lp.x,lp.y)<50000||!(lp instanceof Polygon)||this.class==this.game.tankClasses.sniper) this.fireNextBarrel();
+							if(!this.bmd) this.bmd = -1;
+							if(Math.round(Math.random()*10000)>5000) this.bmd = -this.bmd;
+							this.push(this.speed,this.getDirectionTowards(lp.x,lp.y)+(90*this.bmd));
+							this.push(this.speed-(this.speed*2*30/this.distance(lp.x,lp.y)),this.direction+(((this.hp/this.maxhp<=0.5||lp instanceof Bullet)&&this.distance(lp.x,lp.y)<200000)||moveReverse||this.distance(lp.x,lp.y)<(lp.size+this.size)*100?180:0));
+						}
+						if(this.upgradePoints>=1) {
+							let u = this.getUpgrade(this.upgradePriority);
+							let ma = this.game.botMatchingStats.find((a)=>a.includes(this.upgradePriority));
+							//if(ma) ma = ma.toSpliced(ma.indexOf(this.upgradePriority),1);
+							if(ma) ma = ma[Math.round(Math.random()*(ma.length-1))];
+							if(ma) this.upgradePriority = ma;
+							this.upgrade(this.upgradePriority);
+							if(this.game.botMatchingStats[0].includes(this.upgradePriority)&&!this.flags.includes("bot_rammer")) {
+								this.flags.push("bot_rammer");
+							}
+						}
+						let pu = game.tankClassPathways.get(this.class);
+						if(pu) {
+							pu = pu.find((p)=>p._class==this.tankClassIdea);//pu[Math.round(Math.random()*(pu.length-1))];
+							if(pu.level<=this.visualLevel) {
+								this.setClass(pu._class);
+							}
+						}
+						/*if(!this.lastMessageTime) this.lastMessageTime = -999;
+						if(new Date().getTime()>this.lastMessageTime+4000&&lp!=null&&!(lp instanceof Bullet)&&!(lp instanceof Polygon)) {
+							this.lastMessageTime = new Date().getTime();
+							this.say("hi "+lp.name);
+						}*/
+					}
+					this.addTank(sussyTank);
+					return sussyTank;
+				}
+				
+				addBase(base) {
+					this.bases.push(base);
+				}
+				
+				renderShape(x,y,direction,size,sides,color,lastDamageTime=-999,ctx=this.ctx) {
+					var numberOfSides = this.sides,
+						size = size,
+						Xcenter = ctx.canvas.width/2 + x - this.x,
+						Ycenter = ctx.canvas.height/2 + this.y + y,
+						step  = 2 * Math.PI / sides,
+						shift = (Math.PI / 180.0) * -18;
+					ctx.translate((ctx.canvas.width/2)+x-this.x,(ctx.canvas.height/2)+this.y-y);
+					ctx.rotate(((direction - 90) * Math.PI) / 180);
+					ctx.beginPath();      
+					for (var i = 0; i <= sides;i++) {
+						var curStep = i * step + shift;
+						ctx.lineTo (+ size * Math.cos(curStep), size * Math.sin(curStep));
+					}
+					ctx.closePath();
+					ctx.translate(-(ctx.canvas.width/2)+x-this.x,-(ctx.canvas.height/2)+this.y-y);
+					
+					ctx.strokeStyle = pSBC(-0.75,color);
+					ctx.fillStyle = color;
+					let daf = (new Date().getTime()-lastDamageTime) / 1000;
+					if(daf>0.1) daf = 0.1;
+					daf = daf / 0.1;
+					daf = 1-daf;
+					ctx.filter = "brightness("+(1-daf*0.7)+")";
+					ctx.stroke();
+					ctx.fill();
+					ctx.filter = "none";
+					ctx.resetTransform();
+				}
+				
+				setGUI(gui) {
+					this.gui = gui;
+				}
+				
+				isClosing() {
+					return this.tanks.find((t)=>t instanceof ArenaCloser)!=null&&!this.isClosed();
+				}
+				
+				isClosed() {
+					return this.tanks.filter((t)=>t instanceof LevelingTank).length<=1&&this.tanks.find((t)=>t instanceof ArenaCloser)!=null;
+				}
+				
+				summon(c,force=false) {
+					let c1=new c(this,0,0,0);
+					c1.flags.push("local_player_control");
+					if(force) { this.tanks.push(c1); } else { this.addTank(c1); }
+					return c1;
+				}
+			}
+			
+			const canvas = document.body.children[0];
+			const game = new DanjayeGame(canvas);
+			function rs() {
+				canvas.width = document.body.clientWidth;
+				canvas.height = document.body.clientHeight;
+				game.fixContext();
+			}
+			rs();
+			document.body.onresize = rs;
+			
+			//game.height=2000;
+			//game.width=2000;
+			//game.addBase(new Base(game,1,250,-250,500,500));
+			//game.addBase(new Base(game,2,-750,750,500,500));
+			//game.addBase(new Base(game,3,-750,-250,500,500));
+			//game.addBase(new Base(game,4,250,750,500,500));
+			/*let b = new DominatorBase(game,0,-750,-250,500,500);
+			game.addBase(b);
+			b = new DominatorBase(game,0,250,750,500,500);
+			game.addBase(b);*/
+			//setTimeout(()=>{b.dominator.flags.push("local_player","game_camera_target");b.dominator.behaviorTick=function(){}},50);
+			//fb=new FallenBooster(game,0,0,0);
+			//fb.flags.push("local_player_control");
+			//game.addTank(fb);
+			/*ms=new Mothership(game,200,200,0);
+			ms.flags.push("local_player_control");
+			game.tanks.push(ms);
+			ms.team=2;
+			ms=new Mothership(game,-200,-200,0);
+			ms.flags.push("local_player_control");
+			game.tanks.push(ms);
+			ms.team=1;*/
+			/*",".repeat(40).split(",").forEach((z,i)=>{
+				if(Math.random()*100>70) {
+					let wall = game.summon(Wall,true);
+					let c=Math.floor(i/6);
+					wall.x=(-game.width/2+wall.size/2)+i*wall.size*1.5-(c*wall.size*1.5)*6;
+					wall.y=(game.height/2-wall.size/2)-c*wall.size*1.5;
+				}
+			});*/
+			
+			setInterval(()=>{
+				let bot = game.addBot();
+				//if(!game.tanks.find((t)=>t.flags.includes("local_player"))) { bot.addFlag("local_player"); bot.addFlag("game_camera_target") };
+			},100);
+			
+			/*setInterval(()=>{
+				if(game.tanks.filter((t)=>t instanceof Polygon).length < 200 * game.width/2500) {
+					let sussyShape = new [Square,Square,Square,Square,Square,Square,Square,Square,Square,Square,Square,Square,Triangle,Triangle,Pentagon][Math.round(Math.random()*14)](game,Math.random()*game.width-game.width/2,Math.random()*game.height-game.height/2);
+					sussyShape.addFlag("local_player_control");
+					game.addTank(sussyShape);
+				}
+			},100);*/
+			
+			/*setInterval(()=>{
+				if(game.tanks.filter((t)=>t instanceof AlphaPentagon).length < 7) {
+					let sussyShape = new [Pentagon,Pentagon,Pentagon,Pentagon,AlphaPentagon][Math.round(Math.random()*4)](game,(200-400*Math.random())*game.width/1500,(200-400*Math.random())*game.width/1500);
+					sussyShape.addFlag("local_player_control");
+					game.addTank(sussyShape);
+				}
+			},5000);*/
+			
+			class FlimsyRicketyGUIClientThatNeedsSeriousHelp {
+				constructor(g) {
+					if(!localStorage.getItem("sgc")) this.setStorage({});
+					if(!this.getStorage().preferences) this.setStorage({preferences:[],...this.getStorage()});
+					this.ensurePrefInStorage("show_health_all_tanks");
+					this.tips = ["Use \"V\" on your keyboard to use chat commands to quickly chat","Spinning is a universal sign of friendliness! And celebration! And thanks!","As a Penta Shot, use your high recoil to get away from difficult situations!","As a Destroyer, you are great at taking out high-level threats. Be stealthy when sneaking up on your targets!","As a Streamliner, you are great at chipping off your targets' HP from afar!","As a Overlord, you can defend from bullets with your drones! Use them situationally!","As a Mega Trapper, you are great at defending against Destroyer classes!","Press T to text chat to share specific information.","If someone is pointing away from their targets or not moving their barrels very much, they're most likely a rammer!","It may sound a little crazy, pretty baby, but I promise momma's gon be alright."];
+					document.getElementById("sussy").sussyClientBruh = this;
+					document.getElementById("sussy").onkeydown=function(e){
+						if(e.keyCode==13) {
+							this.sussyClientBruh.hide();
+							let z=Math.ceil(Math.random()*this.sussyClientBruh.game.allowedBotTeams.length);
+							let b = this.sussyClientBruh.game.makeTank(this.value,z==0?null:z);
+							b.flags.push("local_player","game_camera_target");
+							this.sussyClientBruh.game.addTank(b);
+						}
+					};
+					this.bruh = document.querySelector(".overlay");
+					this.game = g;
+					let st = function(e) {
+						let c=this.scb.flipPreference(this.id.replace("preference.",""));
+						if(this.hasAttribute("onchecked")) eval(this.getAttribute("onchecked"));
+					}
+					let c = (d,idPrefix)=> Array.from(d.children).filter((c)=>c.id.startsWith(idPrefix+"."));
+					Array.from(this.bruh.querySelectorAll("*")).forEach((ch)=>{
+						let s = c(ch,"preference");
+						for(let m of s) {
+							m.scb = this;
+							this.ensurePrefInStorage(m.id.replace("preference.",""));
+							let c = this.getPreference(this.getStorage(),m.id.replace("preference.","")).value;
+							m.querySelector("input").checked=c;
+							if(m.hasAttribute("onchecked")&&c) eval(m.getAttribute("onchecked"));
+							m.addEventListener("click",st);
+						}
+						let f = c(ch,"select");
+						for(let gr of f) {
+							gr.scb = this;
+							let a = gr.id.split(".");
+							a.splice(0,1);
+							this.ensurePrefInStorage(a[0],"light");
+							let i=gr.querySelector("input");
+							i.checked=this.getPreference(this.getStorage(),a[0]).value==a[1];
+							if(i.checked&&gr.hasAttribute("onchecked")) eval(gr.getAttribute("onchecked"));
+							gr.addEventListener("click",function(){
+								f.forEach((fg)=>{fg.querySelector("input").checked=false;});
+								let i=this.querySelector("input");i.checked=!i.checked;
+								this.scb.flipPreference(a[0],a[1]);
+								if(this.hasAttribute("onchecked")) eval(this.getAttribute("onchecked"));
+							});
+						}
+					});
+					document.getElementById("game.update").onclick=()=>{
+						if(this.game.isClosing()) game.notif("Current game is closing!");
+						let hmd =this.getHostMenuData();
+						//this.game.privacy=hmd.find((o)=>o.id.startsWith("game.privacy.")&&o.value==true).id.replace("game.privacy.","");
+						if(hmd.find((o)=>o.id=="game.privacy.private").value==true) {
+							if(!this.game.flags.includes("private_host")) this.game.flags.push("private_host");
+						}
+						else {
+							let idx = this.game.flags.indexOf("private_host");
+							if(idx>=0) this.game.flags.splice(idx,1);
+						}
+						this.game.flags.filter((f)=>f.startsWith("rule.")).forEach((f)=>{
+							this.game.flags.splice(this.game.flags.indexOf(f),1);
+						});
+						hmd.filter((o)=>o.id.startsWith("game.rule.")).forEach((r)=>{
+							if(r.value==true) this.game.flags.push(r.id.replace("game.",""));
+						});
+						if(!this.game.flags.includes("local_player_control")) this.game.flags.push("local_player_control");
+						let br =parseInt(hmd.find((f)=>f.id=="game.levelcap").value);
+						if(isNaN(br)) {
+							this.game.notif("could not set level cap! is it a number?",5);
+						}
+						else {
+							this.game.levelcap=br;
+						}
+						let zr =parseInt(hmd.find((f)=>f.id=="game.bots").value);
+						if(isNaN(zr)) {
+							this.game.notif("could not set bot amount! is it a number?",5);
+						}
+						else {
+							this.game.maxBots=zr;
+						}
+						let z=game.modes[hmd.filter((z)=>z.id.startsWith("game.mode.")&&z.value==true).map((z)=>z.id.replace("game.mode.",""))[0]];
+						if(z&&z!=game.mode) game.setMode(z);
+						this.game.notif("sending data to server...",3,"lightgray","gray");
+						this.game.socket.once("danjaye_host_status",(s)=>{
+							if(s==true) {
+								this.showSplash();
+							}
+						});
+						this.game.socket.emit("danjaye_host_status",true);
+					}
+					document.getElementById("game.close").onclick=()=>{
+						this.game.closeArena();
+					}
+					let me= document.querySelector(`[name="modeditor"]`);
+					let i=me.querySelector("input");
+					let tx=me.querySelector("textarea");
+					document.getElementById("modeditor.create").onclick=()=>{
+						let zkf=this.game.mods.find((m)=>m.name==i.value);
+						if(zkf){
+							if(!zkf.meta) zkf.meta={description:null};
+							zkf.meta.description=tx.value;
+							this.game.saveModsStorage();
+							this.game.refreshModsCache();
+						}
+						else {
+							this.game.addMod(i.value,function(){},{ description: tx.value });
+						}
+						this.setMenu("mods");
+					};
+					document.getElementById("modeditor.edit").onclick=()=>{
+						document.body.appendChild(codeEditor.create(i.value));
+					};
+					document.getElementById("modeditor.delete").onclick=async()=>{
+						let zkf=this.game.mods.find((m)=>m.name==i.value);
+						if(zkf){
+							if(await this.prompt("Are you sure? Type the mod's name: "+zkf.name,"Are you sure?",["<p></p>","<input>"])==zkf.name) {
+								this.game.removeMod(this.game.mods.indexOf(zkf));
+								this.game.saveModsStorage();
+								this.game.refreshModsCache();
+								this.setMenu("mods");
+							}
+							else {
+								this.setMenu("modeditor");
+							}
+						}
+					};
+					document.getElementById("modeditor.publish").onclick=async()=>{
+						let zkf=this.game.mods.find((m)=>m.name==i.value);
+						if(zkf&&await this.prompt("Are you sure you want to publish the first added mod with the name: "+zkf.name+"? Continue for yes, and Go back for no")!=null){
+							this.game.notif("modeditor: "+await this.game.publishMod(zkf));
+						}
+					};
+					document.getElementById("game.internetmods.download").onclick=async()=>{
+						let m=this.findSus("internetmods").querySelector("#modsholder-container");
+						let i=0;
+						for(let c of Array.from(m.children).filter((c)=>c.querySelector("input").checked)) {
+							await new Promise((r)=>{
+								setTimeout(async()=>{
+									let cm=c.DanjayeModData;
+									if(!this.game.mods.find((m)=>m.name==cm.name)||await this.prompt("There is already a mod with the name: `"+cm.name+"` installed. Do you want to download it anyway? OK for yes, and Cancel for no")!=null) {
+										this.game.addMod(cm.name,cm.func,cm.meta);
+										this.setMenu("internetmods");
+									}
+									c.querySelector("input").checked=false;
+									r();
+								},i==0?0:500);
+							});
+							i++;
+						};
+					}
+				}
+				
+				getHostMenuData() {
+					let m = this.findSus("host-control");
+					return Array.from(m.querySelectorAll("[id]")).map((h)=>{let im=h.tagName=="INPUT"?h:h.querySelector("input");return{id:h.id,value:im!=null?(im.type=="checkbox"?im.checked:im.value):null};});
+				}
+				
+				async refreshGames() {
+					let games = await (await fetch(this.game.endpoint+"/games/")).json();
+					let m=this.bruh.querySelector(`[name="menu"] ol:last-child`);
+					Array.from(m.querySelectorAll("ol>:not(.exempt)")).forEach((e)=>{e.remove();});
+					for(let g of games) {
+						let ge = document.createElement("li");
+						ge.innerHTML="<p></p>";
+						ge.querySelector("p").innerText="game #"+(g+1);
+						ge.onclick=()=> {
+							this.game.socket.once("danjaye_join",(d)=>{
+								this.game.connected=true;
+								this.showSplash();
+							});
+							this.game.socket.emit("danjaye_join",parseInt(g));
+						}
+						m.appendChild(ge);
+					}
+				}
+				
+				async refreshInternetMods() {
+					let mods = await (await fetch(this.game.endpoint+"/mods/")).json();
+					let m=this.findSus("internetmods").querySelector("#modsholder-container");
+					m.innerHTML="";
+					for(let g of mods) {
+						let ge = document.createElement("li");
+						ge.style="display:flex;gap:10px;";
+						ge.innerHTML="<input type='checkbox'><p style='flex:1'></p>";
+						ge.querySelector("p").innerText=g.name;
+						ge.DanjayeModData=g;
+						if(g.meta&&g.meta.description){
+							ge.querySelector("p").innerHTML+="<small style='display:block;'></small>";
+							ge.querySelector("small").innerText=g.meta.description;
+						}
+						ge.onclick=function() {
+							let i = this.querySelector('input');i.checked = !i.checked;
+						}
+						m.appendChild(ge);
+					}
+				}
+				
+				ensurePrefInStorage(id,v=false) {
+					let s = this.getStorage();
+					if(!s.preferences.find((p)=>p.id==id)) { s.preferences.push({id:id,value:v}); this.setStorage(s); }
+				}
+				
+				getStorage() {
+					return JSON.parse(localStorage.getItem("sgc"));
+				}
+				
+				setStorage(d) {
+					localStorage.setItem("sgc",JSON.stringify(d));
+				}
+				
+				getPreference(b,n) {
+					return b.preferences.find((p)=>p.id==n);
+				}
+				
+				flipPreference(n,v=null) {
+					this.ensurePrefInStorage(n);
+					let g = this.getStorage();
+					let p = this.getPreference(g,n);
+					p.value = v||!p.value;
+					this.setStorage(g);
+					return p.value;
+				}
+				
+				findCurrentlyShowingSus() {
+					return this.bruh.querySelector(".show");
+				}
+				
+				findSus(name) {
+					return this.bruh.querySelector(`[name="${name}"]`);
+				}
+				
+				getThatSussiesDirectionMatrix(bruhThatNeedsHelp,bruhThatIsDoingNothingProductive) {
+					return (Array.from(this.bruh.querySelector("div").children).indexOf(bruhThatIsDoingNothingProductive)-Array.from(this.bruh.querySelector("div").children).indexOf(bruhThatNeedsHelp))*-1;
+				}
+				
+				susAnimation(sus,bruhhh,fadeIn=true) {
+					let iSureHopeThisStillExists = 0;
+					var whyWeCantHaveGoodThings = null;
+					whyWeCantHaveGoodThings = setInterval(()=> {
+						if(iSureHopeThisStillExists>=10) {
+							clearInterval(whyWeCantHaveGoodThings);
+							if(!fadeIn) sus.classList.remove("show");
+						}
+						else {
+							let b = (this.getThatSussiesDirectionMatrix(sus,bruhhh)*iSureHopeThisStillExists);
+							sus.style.transform="translateX("+(fadeIn?10-b:b)+"px)";
+							let o =iSureHopeThisStillExists/10;
+							sus.style.opacity=fadeIn?o:1-o;
+							sus.classList.add("show");
+							iSureHopeThisStillExists++;
+						}
+					},1);
+				}
+				
+				setMenu(name,d=null) {
+					if(!this.findSus(name)) return;
+					this.bruh.style.display="";
+					let bruhhh = this.findCurrentlyShowingSus();
+					let sus = this.findSus(name);
+					if(name=="mods"){
+						let mz=document.getElementById("modsholder-container");
+						this.game.refreshModsCache();
+						Array.from(mz.children).forEach((z)=>{
+							if(z.id!="game.mods.new")z.remove();
+						});
+						this.game.mods.forEach((m)=>{
+							let im=document.createElement("li");
+							im.style.display="flex";
+							im.style.gap="10px";
+							im.onclick=function(){let i =this.querySelector('input');i.checked=!i.checked;document.getElementById("sussy").sussyClientBruh.flipPreference(this.id.replace("preference.",""));}
+							im.id="preference.mod."+m.name;
+							im.innerHTML="<input type='checkbox'><p style='flex:1;'></p>";
+							let pr=this.getPreference(this.getStorage(),"mod."+m.name);
+							if(pr&&pr.value)im.querySelector("input").checked=true;
+							let p=im.querySelector("p");p.innerText=m.name;
+							if(m.meta!=null&&m.meta.description){p.innerHTML+="<small style='display:block;'></small>";p.querySelector("small").innerText=m.meta.description;}
+							mz.prepend(im);
+						});
+					}
+					if(name=="modeditor") {
+						let me= document.querySelector(`[name="modeditor"]`);
+						let i=me.querySelector("input");
+						i.disabled=true;
+						let tx=me.querySelector("textarea");
+						console.log(d);
+						let fzp=d;//prompt("Name of mod? Leave empty if not applicable. If you enter a name it will load the mod's data so it's easier to edit.");
+						let fzz;
+						if(fzp!=null) { fzz=this.game.mods.find((m)=>m.name==fzp); }
+						//i.value="";tx.value="";
+						if(fzp!=null){
+							i.value=fzz!=null?fzz.name:fzp;
+							if(fzz!=null)tx.value=fzz.meta&&fzz.meta.description?fzz.meta.description:"";
+						}
+					}
+					if(name=="internetmods") this.refreshInternetMods();
+					if(!bruhhh.isEqualNode(sus)) this.susAnimation(bruhhh,sus,false);
+					let f = ()=>{this.susAnimation(sus,bruhhh,true);}
+					if(bruhhh.isEqualNode(sus)) {
+						f();
+					}
+					else {
+						setTimeout(f,300);
+					}
+				}
+				
+				hide() {
+					this.bruh.style.display="none";
+				}
+				
+				splashRandomTip() {
+					document.getElementById("tips").innerHTML = "Tip: "+this.tips[Math.ceil(Math.random()*this.tips.length)-1];
+				}
+				
+				showSplash() {
+					if(this.game.connected||this.game.flags.includes("local_player_control")) {
+						this.setMenu("splash");
+						this.splashRandomTip();
+						document.getElementById("sussy").focus();
+					}
+					else {
+						this.setMenu("menu");
+					}
+				}
+				
+				prompt(text="",title="Are you sure?",items=["<p></p>"],fz=[]) {
+					return new Promise((r)=>{
+						var z=this.findCurrentlyShowingSus().getAttribute("name");
+						console.log(z);
+						this.setMenu("prompt");
+						let f=this.findSus("prompt");
+						f.querySelector("h1").innerText=title;
+						let o=f.querySelector("h1+ol");
+						o.innerHTML="";
+						items.forEach((i,d)=>{
+							o.innerHTML+=i;
+							if(typeof(fz[d])=="function") fz[d](o.querySelector(":last-child"));
+						});
+						if(text.length>0) o.querySelector("p").innerText=text;
+						document.getElementById("game.gui.prompt.cancel").onclick=()=>{ this.setMenu(z);r(null); }
+						let ip=o.querySelector("input");
+						document.getElementById("game.gui.prompt.ok").onclick=()=>{ r(ip?ip.value:""); }
+					});
+				}
+			}
+			
+			let gui = new FlimsyRicketyGUIClientThatNeedsSeriousHelp(game);
+			game.setGUI(gui);
+			
+			let sv={x:0,y:0};
+			let isSpectating = false;
+			
+			setInterval(()=>{
+				game.tick();
+				if(!game.tanks.find((t)=>t.flags.includes("local_player"))) {
+					game.pInfoBox.style.display="none";
+					if(document.querySelector(".overlay").style.display=="none") {
+						if(isSpectating) {
+							if(game.keyboard.pressed.includes(87)) sv.y += 0.5;
+							if(game.keyboard.pressed.includes(65)) sv.x -= 0.5;
+							if(game.keyboard.pressed.includes(83)) sv.y -= 0.5;
+							if(game.keyboard.pressed.includes(68)) sv.x += 0.5;
+							game.x += sv.x;
+							game.y += sv.y;
+							let cv=(c,v,l)=>{if(l?game[c]>game[v]/2:game[c]<-game[v]/2){game[c]=(l?1:-1)*game[v]/2;sv[c]=0;}};
+							cv("x","width",true);
+							cv("x","width",false);
+							cv("y","height",true);
+							cv("y","height",false);
+							sv.x -= sv.x / 25;
+							sv.y -= sv.y / 25;
+						}
+						else if(game.keyboard.pressed.length==0) {
+							gui.showSplash();
+						}
+					}
+					else if(isSpectating) {
+						document.querySelector(".overlay").style.display="none";
+					}
+				}
+				else {
+					game.pInfoBox.style.display="flex";
+				}
+				game.render();
+			},10);
+			
+			document.body.oncontextmenu=function(e){e.preventDefault();}
+			
+			game.x = game.width/2-(Math.random()*game.width);
+			game.y = game.height/2-(Math.random()*game.height);
+			game.gui.refreshGames();
+			game.gui.showSplash();
+			
+			let codeEditor = new DanjayeHTMLTemplate(document.querySelector(".codeeditor"),function(m,g){
+				//let m=prompt("Enter the mod's name:");
+				var ga=this.querySelector("textarea");
+				var x=game.mods.find((t)=>t.name==m);
+				if(x) {
+					ga.value=x.func;
+				}
+				else {
+					ga.readOnly=true;
+					ga.innerText="Mod not found";
+				}
+				this.addEventListener("keydown",function(e){
+					if(e.keyCode==9){
+						e.preventDefault();
+					}
+					
+				});
+				addEventListener("mousemove",(e)=>{
+					if(game.mouse.pressed&&game.mouse.target==this.children[0]){
+						this.classList.remove("maximized");
+						this.style.top=e.clientY+"px";
+						this.style.left=e.clientX+"px";
+					}
+				});
+				this.querySelector("li:last-child").onclick=()=>{if(x){if(prompt("save changes? press OK to save, and Cancel to not save")!=null){
+					game.mods.find((t)=>t.name==m).func=ga.value;
+					game.saveModsStorage();
+				}}this.remove();};
+				this.querySelector("li").onclick=()=>{
+					if(this.classList.contains("maximized")){
+						this.classList.remove("maximized");
+					}else{ this.classList.add("maximized");}
+				}
+			},game);
+			document.querySelector(".codeeditor").remove();
+			//document.body.appendChild(codeEditor.create())			
+		</script>
+	</body>
+</html>
