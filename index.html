@@ -685,6 +685,19 @@
 					this.eventListeners[name].splice(this.eventListeners[name].indexOf(z),1);
 				}
 			}
+			class DanjayeEvent {
+				constructor(name) {
+					this.name=name;
+					this.cancelled=false;
+				}
+			}
+			class DamageEvent extends DanjayeEvent {
+				constructor(damage,damager) {
+					super("damage");
+					this.damage=damage;
+					this.damager=damager;
+				}
+			}
 		
 			class Tank extends DanjayeEventHolder {
 				constructor(hp,size,name,lvl,game,team) {
@@ -726,6 +739,9 @@
 					this.id=null;
 					this.registerEvent("damage");
 					this.registerEvent("beforedestroy");
+					this.animations={};
+					this.registerAnimation("death",()=>this.deathTime,1);
+					this.registerAnimation("hurt",()=>this.lastDamageTime,0.1);
 				}
 				
 				reset() {
@@ -747,6 +763,7 @@
 				
 				kill() {
 					this.deathTime = new Date().getTime();
+					this.hp=0;
 				}
 				
 				destroy() {
@@ -799,7 +816,13 @@
 				}
 				
 				damageTick() {
-					if(this.hp==0) this.destroy();
+					if(this.hp==0) {
+						let d=this.getAnimationProgress("death");
+						if(d>100) this.kill();
+						console.log(d);
+						if(d>=1&&d<100) this.destroy();
+						return;
+					}
 					for(let tank of this.colliders) {
 						if(this.canBeDamagedBy(tank)) {
 							this.damage(tank.bodyDamage,tank);
@@ -822,7 +845,7 @@
 					this.collideWithWall();
 					this.collide();
 					if(this.flags.includes("local_player")) {
-						if(this.game.keyboard.pressed.includes(79)) this.destroy(); 
+						if(this.game.keyboard.pressed.includes(79)) this.kill(); 
 						if(this.game.keyboard.pressed.includes(87)) this.velocity.y += this.speed;
 						if(this.game.keyboard.pressed.includes(65)) this.velocity.x -= this.speed;
 						if(this.game.keyboard.pressed.includes(83)) this.velocity.y -= this.speed;
@@ -856,6 +879,7 @@
 				}
 				
 				healingTick() {
+					if(this.hp==0) return;
 					if(new Date().getTime() < (this.lastDamageTime + this.timeToHeal * 1000)) return;
 					let rate = (new Date().getTime()/1000 - (this.lastDamageTime/1000 + this.timeToHeal)) * this.healingRate;
 					if(rate > 0.15) rate = 0.15;
@@ -873,10 +897,6 @@
 				}
 				
 				render(ctx) {
-					let daf = (new Date().getTime()-this.lastDamageTime) / 1000;
-					if(daf>0.1) daf = 0.1;
-					daf = daf / 0.1;
-					daf = 1-daf;
 					if(this.stationary||this.class==this.game.tankClasses.smasher||this.class==this.game.tankClasses.spike) {
 						let t = 47.5;
 						if(this.class==this.game.tankClasses.smasher||this.class==this.game.tankClasses.spike) {
@@ -899,15 +919,42 @@
 					this.body(ctx);
 				}
 				
+				animationProgress(startTime,length) {
+					let daf = (new Date().getTime()-startTime) / 1000;
+					//if(daf>length) daf = length;
+					return (daf / length)*10;
+				}
+				
+				getAnimationProgress(name) {
+					let a=this.getAnimation(name);
+					if(!a) throw new Error("No animation with name " + name);
+					return this.animationProgress(a.startTimeGetter(),a.length);
+				}
+				
+				getAnimation(name) {
+					return this.animations[name];
+				}
+				
+				isAnimationPlaying(name) {
+					let a=this.getAnimation(name);
+					return new Date().getTime()-a.startTimeGetter()<=a.length*1000;
+				}
+				
+				registerAnimation(name,startTimeGetter,length) {
+					this.animations[name]= {startTimeGetter:startTimeGetter,length:length};
+				}
+				
+				applyVisualEffects(ctx) {
+					//console.log(this.getAnimationProgress("death"));
+					ctx.filter = `brightness(${Math.min(1-this.getAnimationProgress("hurt")*0.7,1)}) opacity(${Math.max(0,1-this.getAnimationProgress("death")*1.5)})`;
+					if(this.isAnimationPlaying("death")) this.size += Math.min(4,this.getAnimationProgress("death")*4);
+				}
+				
 				body(ctx) {
-					let daf = (new Date().getTime()-this.lastDamageTime) / 1000;
-					if(daf>0.1) daf = 0.1;
-					daf = daf / 0.1;
-					daf = 1-daf;
 					ctx.beginPath();
 					ctx.fillStyle = this.getTeam().color;
 					ctx.strokeStyle = pSBC(-0.75,this.getTeam().color);
-					ctx.filter = "brightness("+(1-daf*0.7)+")";
+					this.applyVisualEffects(ctx);
 					ctx.arc(ctx.canvas.width/2+this.x-this.game.x,ctx.canvas.height/2+this.game.y-this.y,this.size,0,2*Math.PI,false);
 					ctx.closePath();
 					ctx.stroke();
@@ -958,18 +1005,21 @@
 				}
 				
 				collide() {
+					if(this.hp==0) return;
 					this.colliders = [];
 					this.game.tanks.forEach((tank)=>{
 						if(this.canCollide(tank)) {
-							if(this.distance(tank.x,tank.y) <= (this.size+tank.size)**2) {
-								let my = tank.mass/this.mass;
-								if(my > 1) my = 1;
-								let t = this.mass/tank.mass;
-								if(t > 1) t = 1;
-								this.velocity.x += tank.velocity.x * my;
-								this.velocity.y += tank.velocity.y * my;
-								tank.velocity.x -= tank.velocity.x * t;
-								tank.velocity.y -= tank.velocity.y * t;
+							if(tank.hp>0&&this.distance(tank.x,tank.y) <= (this.size+tank.size)**2) {
+								if((this.bodyDamage<tank.hp&&tank.bodyDamage<this.hp)||!this.canBeDamagedBy(tank)||!tank.canBeDamagedBy(this)) {
+									let my = tank.mass/this.mass;
+									if(my > 1) my = 1;
+									let t = this.mass/tank.mass;
+									if(t > 1) t = 1;
+									this.velocity.x += tank.velocity.x * my;
+									this.velocity.y += tank.velocity.y * my;
+									tank.velocity.x -= tank.velocity.x * t;
+									tank.velocity.y -= tank.velocity.y * t;
+								}
 								this.colliders.push(tank);
 							}
 						}
@@ -1078,6 +1128,7 @@
 				}
 				
 				addXP(xp) {
+					if(this.hp==0) return;
 					this.notXP += xp;
 					while(this.notXP >= this.requiredXPForNextLevel&&this.visualLevel<this.game.levelcap) {
 						this.notXP -= this.requiredXPForNextLevel;
@@ -1456,7 +1507,7 @@
 				
 				tick() {
 					if(this.createdAt+(this.lifetime*1000)<new Date().getTime()) {
-						this.destroy();
+						if(this.hp>0) this.kill();
 					}
 					if(this.team!=0) this.collideBase();
 					this.collide();
@@ -1476,8 +1527,10 @@
 					ctx.strokeStyle = pSBC(-0.75,this.getTeam().color);
 					ctx.arc(ctx.canvas.width/2+this.x-this.game.x,ctx.canvas.height/2+this.game.y-this.y,this.size,0,2*Math.PI);
 					ctx.closePath();
+					this.applyVisualEffects(ctx);
 					ctx.stroke();
 					ctx.fill();
+					ctx.filter="none";
 				}
 				
 				collideBase() {
@@ -1485,7 +1538,7 @@
 						if(base.team == this.team) continue;
 						if(base instanceof DominatorBase) continue;
 						if(this.x >= base.x && this.x <= base.x + base.width && this.y <= base.y && this.y >= base.y - base.height) {
-							this.destroy();
+							if(this.hp>0) this.kill();
 						}
 					}
 				}
@@ -1530,12 +1583,13 @@
 				}
 				
 				render(ctx) {
+					this.applyVisualEffects(ctx);
 					this.game.renderShape(this.x,this.y,this.direction,this.size,3,this.getTeam().color);
 				}
 				
 				tick() {
 					if(this.createdAt+(this.lifetime*1000)<new Date().getTime() || (!(this.owner instanceof Base)&&!this.game.tanks.includes(this.owner))) {
-						this.destroy();
+						if(this.hp>0) this.kill();
 					}
 					if(this.team!=0) this.collideBase();
 					this.collide();
@@ -1568,8 +1622,10 @@
 					
 					ctx.fillStyle = this.getTeam().color;
 					ctx.strokeStyle = pSBC(-0.75,this.getTeam().color);
+					this.applyVisualEffects(ctx);
 					ctx.stroke();
 					ctx.fill();
+					ctx.filter="none";
 					ctx.resetTransform();
 				}
 				
@@ -1609,6 +1665,7 @@
 				}
 				
 				render(ctx) {
+					this.applyVisualEffects(ctx);
 					this.game.renderShape(this.x,this.y,this.direction,this.size,this.sides,this.color,this.lastDamageTime);
 					/*var numberOfSides = this.sides,
 						size = this.size,
@@ -1974,7 +2031,7 @@
 							return {
 								barrels: [
 									new Barrel(20,29,0,99,owner,0.5,0,1,{speed:7,damage:2,hp:3,mass:10}),
-									new Barrel(40,10,0,0,owner,2.5,0,10,{speed:5,damage:15,hp:100,mass:200,damageRate:1000},Trap,2,null,0.2,23.5)
+									new Barrel(40,10,0,0,owner,2.5,0,10,{speed:5,damage:15,hp:100,mass:800,damageRate:1000},Trap,2,null,0.2,23.5)
 								]
 							}
 						},
@@ -2196,7 +2253,8 @@
 						{ _class: this.tankClasses.tri_angle, level: 30 }
 					]);
 					this.tankClassPathways.set(this.tankClasses.trapper,[
-						{ _class: this.tankClasses.gunner_trapper, level: 45 }
+						{ _class: this.tankClasses.gunner_trapper, level: 45 },
+						{ _class: this.tankClasses.mega_trapper, level: 45 }
 					]);
 					this.tankClassPathways.set(this.tankClasses.sniper,[
 						{ _class: this.tankClasses.overseer, level: 30 },
@@ -2595,6 +2653,32 @@
 				
 				refreshModsCache() {
 					this.mods=this.getModsStorage();
+				}
+				
+				drawGrid(dist=25) {
+					let w=document.body.clientWidth;
+					let h=document.body.clientHeight;
+					this.ctx.resetTransform();
+					this.ctx.lineWidth=1;
+					this.ctx.strokeStyle="rgba(37,37,37,0.1)";
+					" ".repeat(h/dist).split("").forEach((z,i)=>{
+						this.ctx.beginPath();
+						let a=i*dist+((game.y+i*dist)%dist);
+						this.ctx.moveTo(0,a);
+						this.ctx.lineTo(w,a);
+						this.ctx.closePath();
+						this.ctx.stroke();
+					});
+					" ".repeat(w/dist).split("").forEach((z,i)=>{
+						this.ctx.beginPath();
+						let a=i*dist+((-game.x+i*dist)%dist);
+						this.ctx.moveTo(a,0);
+						this.ctx.lineTo(a,h);
+						this.ctx.closePath();
+						this.ctx.stroke();
+					});
+					this.ctx.lineWidth=10;
+					this.ctx.filter="none";
 				}
 				
 				initMods() {
@@ -3031,6 +3115,7 @@
 					this.ctx.rect(this.canvas.width/2-this.x-this.width/2,this.canvas.height/2+this.y-this.height/2,this.width,this.height);
 					this.ctx.fillStyle=document.body.classList.contains('dark')?"#151515":"whitesmoke";
 					this.ctx.fill();
+					this.drawGrid();
 					for(let base of this.bases) {
 						base.render(this.ctx);
 					}
@@ -3173,35 +3258,53 @@
 				addBot() {
 					if(this.isClosed()||this.isClosing()||this.tanks.filter((t)=>t.flags.includes("bot")).length>=this.maxBots) return;
 					let getTeamTanks = (a)=>this.tanks.filter((t)=>t.team==a&&t.flags.includes("bot"));
-					let getLeastTankTeam = ()=>this.allowedBotTeams.sort((a,b)=>getTeamTanks(this.allowedBotTeams.indexOf(b)).length-getTeamTanks(this.allowedBotTeams.indexOf(a)).length)[0];
+					let getLeastTankTeam = ()=>this.allowedBotTeams.toSorted((a,b)=>getTeamTanks(this.allowedBotTeams.indexOf(b)).length-getTeamTanks(this.allowedBotTeams.indexOf(a)).length)[0];
 					let team = this.allowedBotTeams.length==0?null:getLeastTankTeam();//this.allowedBotTeams[Math.round(Math.random()*(this.allowedBotTeams.length-1))];
 					let rn = ["Arena Closer","BigTank","BLU","ShootEmUp","Dominator","Sinbadx","TEAMTEAM","Aurora","ben","CMD","gaben","HeavyWeapons",".","killer","kate","Boss","pet","Fallen Booster",":)",":^)","princess","cupcake","King","xX_Legend_Xx","MONSTER","d","Smash!","XD","bruh",":(","Wesley"];
 					let sussyTank = this.makeTank(rn[Math.round(Math.random()*(rn.length-1))],team);
 					sussyTank.addFlag("bot");
 					sussyTank.upgradePriority = sussyTank.upgrades[Math.ceil(Math.random()*sussyTank.upgrades.length)-1].id;
-					//sussyTank.addXP(Math.round(Math.random()*999));
+					sussyTank.addXP(Math.round(Math.random()*999));
 					//sussyTank.addXP(16269);
+					sussyTank.target={ x: 0, y: 0 };
+					sussyTank.lastTargetChangeTime=-999;
+					sussyTank.log=function(k,t,tz=1){
+						let m=()=>this.messages.find((m)=>m.text.startsWith(k));
+						if(!m()) this.say(k,tz);
+						m().text=k+" "+t;
+					}
+					sussyTank.resetCoordinate={x:(Math.random()*game.width)-game.width/2,y:(Math.random()*game.height)-game.height/2};
+					if(Math.random()>0.4) sussyTank.addFlag("bot_flanker");
+					let randomModifier = Math.random();
 					sussyTank.behaviorTick=function() {
 						if(this.tankClassIdea==null||this.tankClassIdea==this.class) {
 							let c = this.game.tankClassPathways.get(this.class);
 							if(c) this.tankClassIdea = c[Math.round(Math.random()*(c.length-1))]._class;
 						}
-						let lp = this.game.tanks.filter((t)=>(t.team!=this.team||t.team==null)&&t!=this&&this.distance(t.x,t.y)<100000&&(!t.owner||t.owner!=this)&&!(t instanceof Wall)&&!t.colliders.find((z)=>z instanceof Wall)).toSorted((a,b)=>this.distance(a.x,a.y)-(a.size**2)-this.distance(b.x,b.y)-(b.size**2));
-						let t = lp.find((t)=>(/*!(t instanceof Bullet)&&*/!(t instanceof Polygon)&&((t.hp/t.maxhp)<0.5||(this.hp/this.maxhp)>0.75))||t.bodyDamage>this.hp/10); // tanks
-						if(t==null||this.distance(t.x,t.y)>100000) { 
-							lp = lp.length > 0 ? lp[0] : {x:0,y:0};
+						let lp = this.game.tanks.filter((t)=>(t.team!=this.team||t.team==null)&&t!=this&&this.distance(t.x,t.y)<50000&&(!t.owner||t.owner!=this)&&!(t instanceof Wall)&&!t.colliders.find((z)=>z instanceof Wall)).toSorted((a,b)=>this.distance(a.x,a.y)-(a.size**2)-this.distance(b.x,b.y)-(b.size**2));
+						let t=lp.find((z)=>this.distance(z.x,z.y)<2000+(300*z.size)&&z.bodyDamage>this.maxhp/4);
+						if(t) this.log("TBD:","Is targeting body damage",2);
+						if(!t) t = lp.slice(0,7).toSorted((a,b)=>b.xp-a.xp).find((t)=>((!(t instanceof Bullet)&&!(t instanceof Polygon))||(t.bodyDamage>this.maxhp/4&&this.distance(t.x,t.y)<20000)));
+						
+						lp = (t==null||this.distance(t.x,t.y)>100000)&&lp.length > 0 ? lp[Math.ceil(Math.random()*lp.length-1)] : t;
+						if(lp==null) {
+							lp=this.resetCoordinate;
+							this.log("BoundsError:","Couldn't find position");
 						}
-						else {
-							lp = t;
+						if(new Date().getTime()-this.lastTargetChangeTime>225+50*randomModifier) {
+							this.lastTargetChangeTime = new Date().getTime();
+							this.target = {x:lp.x,y:lp.y};
+							this.log("Target:","Updated target position");
 						}
+						if(lp&&(this.target.x!=lp.x||this.target.y!=lp.y)&&lp.name) this.log("TargetFormula:","Seen a tank called "+lp.name);
 						if(lp!=null) {
 							let moveReverse = (this.flags.includes("bot_rammer") && this.hp/this.maxhp>0.5 && !this.game.botRammerClasses.includes(this.class)) || ((this.game.botRammerClasses.includes(this.class) && this.hp/this.maxhp<=0.5));
-							this.direction += (-this.direction - (this.getDirectionTowards(lp.x,lp.y) + (moveReverse?180:1)));
-							if(this.distance(lp.x,lp.y)<50000||!(lp instanceof Polygon)||this.class==this.game.tankClasses.sniper) this.fireNextBarrel();
+							this.direction += (-this.direction - (this.getDirectionTowards(this.target.x,this.target.y) + (moveReverse?180:1)))/5;
+							if(lp instanceof Tank) {if(this.distance(lp.x,lp.y)<50000||!(lp instanceof Polygon)||[this.game.tankClasses.sniper,this.game.tankClasses.ranger,this.game.tankClasses.hunter].includes(this.class)) this.fireNextBarrel();}
 							if(!this.bmd) this.bmd = -1;
-							if(Math.round(Math.random()*10000)>5000) this.bmd = -this.bmd;
+							if(Math.random()*10000>9000+1000*Math.random()) this.bmd = -this.bmd;
 							this.push(this.speed,this.getDirectionTowards(lp.x,lp.y)+(90*this.bmd));
-							this.push(this.speed-(this.speed*2*30/this.distance(lp.x,lp.y)),this.direction+(((this.hp/this.maxhp<=0.5||lp instanceof Bullet)&&this.distance(lp.x,lp.y)<200000)||moveReverse||this.distance(lp.x,lp.y)<(lp.size+this.size)*100?180:0));
+							this.push(this.speed-(this.speed*2*30/this.distance(lp.x,lp.y)),this.direction+(((this.hp/this.maxhp<=0.5&&!(lp instanceof Polygon))&&this.distance(lp.x,lp.y)<200000)||moveReverse||this.distance(lp.x,lp.y)<(lp.size+this.size)*100||(lp.bodyDamage>this.maxhp/4&&this.distance(lp.x,lp.y)<15000&&!this.flags.includes("bot_rammer"))?180:0));
 						}
 						if(this.upgradePoints>=1) {
 							let u = this.getUpgrade(this.upgradePriority);
@@ -3254,11 +3357,11 @@
 					
 					ctx.strokeStyle = pSBC(-0.75,color);
 					ctx.fillStyle = color;
-					let daf = (new Date().getTime()-lastDamageTime) / 1000;
+					/*let daf = (new Date().getTime()-lastDamageTime) / 1000;
 					if(daf>0.1) daf = 0.1;
 					daf = daf / 0.1;
 					daf = 1-daf;
-					ctx.filter = "brightness("+(1-daf*0.7)+")";
+					ctx.filter = "brightness("+(1-daf*0.7)+")";*/
 					ctx.stroke();
 					ctx.fill();
 					ctx.filter = "none";
@@ -3286,7 +3389,7 @@
 			}
 			
 			const canvas = document.body.children[0];
-			const game = new DanjayeGame(canvas);
+			const game = new DanjayeGame(canvas,"https://tanks.danjaye.lol");
 			function rs() {
 				canvas.width = document.body.clientWidth;
 				canvas.height = document.body.clientHeight;
