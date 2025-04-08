@@ -1,5 +1,5 @@
 # tanks
-It's a tank game. Documentation will either come here or at my website https://danjaye.lol
+It's a tank game written in javascript. Documentation is at https://danjaye.lol/tanksdoc but also might come here sometime
 
 - tanks.js is the central server
 - tank.js is the dedicated server
