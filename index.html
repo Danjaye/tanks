@@ -355,7 +355,7 @@
 						<br style="margin-top:30px;">
 						<li onclick="isSpectating=true;let v=null;v=document.body.addEventListener('keydown',(e)=>{if(e.keyCode==27){isSpectating=false;document.body.removeEventListener('keydown',v);}});"><p>spectate</p></li>
 						<br style="margin-top:30px;">
-						<li id="game.leave" onclick="let g=document.getElementById('sussy').sussyClientBruh;g.game.socket.emit('danjaye_leave',true);g.game.connected=false;g.game.tanks.forEach((t,i)=>{if(i>0)t.destroy();});g.showSplash();"><p>leave game</p></li>
+						<li id="game.leave" onclick="let g=document.getElementById('sussy').sussyClientBruh;g.game.disconnect();g.game.tanks.forEach((t,i)=>{if(i>0)t.destroy();});g.showSplash();"><p>leave game</p></li>
 						<li id="game.hostmenu" onclick="let g=document.getElementById('sussy').sussyClientBruh;g.setMenu('host-control');"><p>host settings</p></li>
 					</ol>
 				</div>
@@ -748,7 +748,7 @@
 					this.body=new Tank().body;
 					this.barrels.forEach((b)=>{
 						b.drones.forEach((d)=>{
-							d.destroy();
+							d.kill();
 						});
 					});
 				}
@@ -762,6 +762,9 @@
 				}
 				
 				kill() {
+					if(this.flags.includes("local_player_control")) {
+						this.game.socket.emit("danjaye_kill",this.id);
+					}
 					this.deathTime = new Date().getTime();
 					this.hp=0;
 				}
@@ -815,14 +818,22 @@
 					return (tank.team!=this.team||tank.team==null)&&new Date().getTime()>this.damagers.get(tank).lastDamageTime+tank.damageRate;
 				}
 				
-				damageTick() {
+				deathAnimationCheck() {
 					if(this.hp==0) {
+						if(this.flags.includes("local_player_control")) this.flags.splice(this.flags.indexOf("local_player_control"),1);
 						let d=this.getAnimationProgress("death");
 						if(d>100) this.kill();
-						console.log(d);
 						if(d>=1&&d<100) this.destroy();
-						return;
+						if(!this.flags.includes("local_player_control")) {
+							this.applyVelocity();
+							this.dissipateVelocity();
+						}
+						return true;
 					}
+				}
+				
+				damageTick() {
+					if(this.deathAnimationCheck()) return;
 					for(let tank of this.colliders) {
 						if(this.canBeDamagedBy(tank)) {
 							this.damage(tank.bodyDamage,tank);
@@ -845,16 +856,34 @@
 					this.collideWithWall();
 					this.collide();
 					if(this.flags.includes("local_player")) {
-						if(this.game.keyboard.pressed.includes(79)) this.kill(); 
+						if(this.game.keyboard.pressed.includes(79)&&this.hp>0) this.kill(); 
 						if(this.game.keyboard.pressed.includes(87)) this.velocity.y += this.speed;
 						if(this.game.keyboard.pressed.includes(65)) this.velocity.x -= this.speed;
 						if(this.game.keyboard.pressed.includes(83)) this.velocity.y -= this.speed;
 						if(this.game.keyboard.pressed.includes(68)) this.velocity.x += this.speed;
 						if(this.game.keyboard.pressed.includes(220)&&(this.lastClassChangeTime==null||new Date().getTime()>this.lastClassChangeTime+500)) {
 							this.lastClassChangeTime = new Date().getTime();
-							this.setClass(game.getRandomObjectValue(game.tankClasses));
+							let c=game.getRandomObjectValue(game.tankClasses);
+							if(this.game.flags.includes("local_player_control")) {
+								this.setClass(c);
+							}
+							else {
+								this.game.socket.emit("danjaye_request_data",{
+									class: c.name
+								});
+							}
 						}
-						if(this.game.keyboard.pressed.includes(75)) this.addXP(Math.ceil(this.requiredXPForNextLevel/10));
+						if(this.game.keyboard.pressed.includes(75)) {
+							let a=Math.ceil(this.requiredXPForNextLevel/10);
+							if(this.game.flags.includes("local_player_control")) {
+								this.addXP(a);
+							}
+							else {
+								this.game.socket.emit("danjaye_request_data",{
+									xp: a
+								});
+							}
+						}
 					}
 					this.applyVelocity();
 					this.dissipateVelocity();
@@ -1005,7 +1034,7 @@
 				}
 				
 				collide() {
-					if(this.hp==0) return;
+					if(this.hp==0||!this.game.flags.includes("local_player_control")) return;
 					this.colliders = [];
 					this.game.tanks.forEach((tank)=>{
 						if(this.canCollide(tank)) {
@@ -1631,7 +1660,7 @@
 				
 				tick() {
 					if(this.createdAt+(this.lifetime*1000)<new Date().getTime() || (!(this.owner instanceof Base)&&!this.game.tanks.includes(this.owner))) {
-						this.destroy();
+						this.kill();
 					}
 					if(this.team!=0) this.collideBase();
 					this.collide();
@@ -2394,7 +2423,7 @@
 					this.levelcap = 60;
 					this.notif("connecting...",5,"lightgray","gray");
 					this.endpoint = endpoint;
-					this.socket = io(endpoint);
+					this.initSocket();
 					this.netOldClassMap = {
 						"Tank": Tank,
 						"Bullet": Bullet,
@@ -2413,91 +2442,13 @@
 						"Necromancer": Necromancer,
 						"FallenOverlord": FallenOverlord
 					};
-					this.netSendingSpeed = 50;
-					this.netRecievingSpeed = 2000;
+					this.netSendingSpeed = 10;
+					this.netRecievingSpeed = 10;
 					this.lastPayloadTime = -99;
 					this.id=null;
-					this.socket.on("id",(id)=>{
-						this.id = id;
-					});
-					this.socket.on("danjaye_data",(d)=>{
-						for(let ta of d) {
-							let t = this.tanks.find((t)=>t.id==ta.id);
-							if(t==null) {
-								console.log(ta._constructor);
-								if(this.netOldLongConstructorClasses.includes(ta._constructor)) t = new this.netOldClassMap[ta._constructor](ta.maxhp,ta.size,ta.name,ta.visualLevel,this,ta.team);
-								if(this.netOldShortConstructorClasses.includes(ta._constructor)) t = new this.netOldClassMap[ta._constructor](this,ta.x,ta.y,ta.direction);
-								t.id = ta.id;
-								this.addTank(t);
-							}
-							if(!t.flags.includes("local_player_control")) {
-								t.x = ta.x;
-								t.y = ta.y;
-								t.direction = ta.direction;
-								t.team = ta.team;
-								t.xp = ta.xp;
-								t.hp = ta.hp;
-								t.maxhp = ta.maxhp;
-								t.messages=ta.messages;
-								t.name=ta.name;
-								t.size=ta.size;
-								t.velocity=ta.velocity;
-								t.barrels=[];
-								for(let b of ta.barrels) {
-									t.addBarrel(new Barrel(b.width,b.length,b.rotation,b.firePriority,t,b.firerate,b.horizOffset,b.recoil,b.bullet,this.netOldClassMap[b.bulletConstructor],b.maxDrones,b.spread,b.funnelAngle,b.vertOffset,b.reloadBeforeFiringOtherBarrels,b.canControlDrones));
-								}
-								if(ta._constructor=="LevelingTank")t.upgrades=ta.upgrades;
-								t.bodyDamage=ta.bodyDamage;
-							}
-						}
-					});
-					this.socket.on("danjaye_delete",(d)=>{
-						this.tanks.find((t)=>t.id==d).destroy();
-					});
 					this.flags=[];
 					this.connected=false;
 					this.delegatedIDs = {};
-					this.socket.on("danjaye_join",(d)=>{
-						this.players.push(d);
-						if(this.flags.includes("local_player_control")) {
-							this.delegate(d);
-						}
-					});
-					this.socket.on("danjaye_delegate",(d)=>{
-						if(!this.flags.includes("local_player_control")) {
-							if(!Array.isArray(this.delegatedIDs)) this.delegatedIDs = [];
-							this.delegatedIDs.push(d);
-						}
-					});
-					this.socket.on("danjaye_host_status",(s)=>{
-						let idx = this.flags.indexOf("local_player_control");
-						if(s) {
-							if(idx==-1) {
-								this.flags.push("local_player_control");
-							}
-							this.notif("Now hosting a game",15,"lightgreen","darkgreen");
-						}
-						else {
-							if(idx>=0) {
-								this.flags.splice(idx,1);
-								this.notif("No longer hosting a game",5,"lightgray","gray");
-							}
-						}
-					});
-					this.socket.on("danjaye_request_fire",(d)=>{
-						if(this.flags.includes("local_player_control")) {
-							this.tanks.find((t)=>t.id==this.delegatedIDs[d.id][0]).barrels.filter((b)=>b.firePriority==d.barrel).forEach((b)=>{b.fire();});
-						}
-					});
-					this.socket.on("disconnect",()=>{
-						this.notif("disconnected from server",7,"indianred");
-					});
-					this.socket.on("connect",()=>{
-						this.notif("connected to server",7);
-					});
-					this.socket.on("connect_error",(e)=>{
-						this.notif("can't connect to server: "+e,7,"indianred");
-					});
 					this.spawning = [
 						{
 							classes: [Square,Square,Square,Square,Square,Square,Square,Square,Square,Square,Square,Square,Triangle,Triangle,Pentagon],
@@ -2732,9 +2683,34 @@
 					this.roundEndNotif=()=>null;
 				}
 				
+				parse(t,c,d) {
+					if(t=="summon"){
+						if(c.includes("Base")){
+							let bm={"Base":Base,"DominatorBase":DominatorBase};
+							this.addBase(new bm[c](this,d.team,d.x,d.y,d.width,d.height,d.spawnDrones));
+						}
+					}
+					if(t=="killfeed") {
+						let f = (a)=>this.tanks.find((z)=>z.id==a);
+						this.killfeed(f(c[0]),f(c[1]),c[2]==null?null:f(c[2]));
+					}
+					if(t=="damagers"){
+						c=this.tanks.find((t)=>c);
+						if(c) c.damagers;
+					}
+				}
+				
+				command(c) {
+					return new Promise((r)=> {
+						this.socket.once("danjaye_command",(t)=>{
+							r(t);
+						});
+						this.socket.emit("danjaye_command",c);
+					});
+				}
+				
 				setMode(mode) {
-					this.bases=[];
-					this.tanks=[];
+					this.reset();
 					this.mode=mode;
 					this.mode();
 				}
@@ -2832,6 +2808,16 @@
 					setTimeout(()=>{if(!this.isClosed()&&!this.isClosing())this.closeArena();},3000);
 				}
 				
+				reset() {
+					if(this.flags.includes("local_player_control")) {
+						this.socket.emit("danjaye_game_fire",{
+							reset: []
+						});
+					}
+					this.bases=[];
+					this.tanks=[];
+				}
+				
 				addRoundTime(time) {
 					this.roundTime += time;
 				}
@@ -2902,7 +2888,17 @@
 						let za=document.createElement("div");
 						za.innerHTML="<canvas></canvas><p>"+z._class.name+"</p>";
 						this.renderTankClass(za.querySelector("canvas").getContext("2d"),z._class,(t)=>{t.size=20;});
-						za.onclick=()=>{game.localPlayer.setClass(z._class);cu.innerHTML="";}
+						za.onclick=()=>{
+							if(this.flags.includes("local_player_control")){
+								this.localPlayer.setClass(z._class);
+							}
+							else {
+								this.socket.emit("danjaye_request_data",{
+									class: z._class.name
+								});
+							}
+							cu.innerHTML="";
+						}
 						cu.appendChild(za);
 					});
 					
@@ -2948,6 +2944,143 @@
 						id++;
 					}
 					return i;
+				}
+				
+				connect(e) {
+					this.endpoint=e;
+					this.disconnect();
+					this.initSocket();
+					this.socket.once("id",(d)=>{
+						this.connected=true;
+						this.gui.showSplash();
+					});
+				}
+				
+				initSocket() {
+					if(this.socket) this.socket.destroy();
+					this.socket = io(this.endpoint);
+					this.socket.on("id",(id)=>{
+						this.id = id;
+					});
+					this.socket.on("danjaye_throttling",(d)=>{
+						this.socket.emit("danjaye_throttling");
+					});
+					this.socket.on("danjaye_data",(d)=>{
+						for(let ta of d) {
+							let t = this.tanks.find((t)=>t.id==ta.id);
+							if(t==null) {
+								//console.log(ta._constructor);
+								if(this.netOldLongConstructorClasses.includes(ta._constructor)) t = new this.netOldClassMap[ta._constructor](ta.maxhp,ta.size,ta.name,ta.visualLevel,this,ta.team);
+								if(this.netOldShortConstructorClasses.includes(ta._constructor)) t = new this.netOldClassMap[ta._constructor](this,ta.x,ta.y,ta.direction);
+								t.id = ta.id;
+								this.addTank(t);
+								t.x=ta.x;
+								t.y=ta.y;
+							}
+							if(ta.xp>t.xp) t.addXP(ta.xp-t.xp);
+							if(ta.visualLevel) t.visualLevel=ta.visualLevel;
+							if(ta.hp&&ta.hp<t.hp) t.lastDamageTime=new Date().getTime();
+							if(ta.hp) t.hp = ta.hp;
+							if(ta._constructor=="LevelingTank") {
+								if(t.class==null||ta.class!=t.class.name) t.setClass(this.tankClasses[ta.class]);
+							}
+							else {
+								t.barrels=[];
+								for(let b of ta.barrels) {
+									let ba=new Barrel(b.width,b.length,b.rotation,b.firePriority,t,b.firerate,b.horizOffset,b.recoil,b.bullet,this.netOldClassMap[b.bulletConstructor],b.maxDrones,b.spread,b.funnelAngle,b.vertOffset,b.reloadBeforeFiringOtherBarrels,b.canControlDrones);
+									ba.lastFireTime=b.lastFireTime;
+									t.addBarrel(ba);
+								}
+							}
+							if(!t.flags.includes("local_player_control")) {
+								if(ta.x) t.x += (ta.x - t.x);
+								if(ta.y) t.y += (ta.y - t.y);
+								if(ta.direction) t.direction = ta.direction;
+								if(ta.team) t.team = ta.team;
+								if(ta.maxhp) t.maxhp = ta.maxhp;
+								if(ta.owner) t.owner=this.tanks.find((t)=>t.id==ta.owner);
+								if(ta.messages) t.messages=ta.messages;
+								if(ta.name) t.name=ta.name;
+								if(ta.size) t.size=ta.size;
+								if(ta.velocity) t.velocity=ta.velocity;
+								if(ta._constructor=="LevelingTank"&&ta.upgrades)t.upgrades=ta.upgrades;
+								if(ta.bodyDamage) t.bodyDamage=ta.bodyDamage;
+							}
+						}
+					});
+					this.socket.on("danjaye_match_data",(d)=>{
+						for(let [k,v] of Object.entries(d)) {
+							this[k] = v;
+						}
+					});
+					this.socket.on("danjaye_destroy",(d)=>{
+						this.tanks.find((t)=>t.id==d).destroy();
+					});
+					this.socket.on("danjaye_kill",(d)=>{
+						this.tanks.find((t)=>t.id==d).kill();
+					});
+					this.socket.on("danjaye_join",(d)=>{
+						this.players.push(d);
+						if(this.flags.includes("local_player_control")) {
+							this.delegate(d);
+						}
+					});
+					this.socket.on("danjaye_delegate",(d)=>{
+						if(!this.flags.includes("local_player_control")) {
+							if(!Array.isArray(this.delegatedIDs)) this.delegatedIDs = [];
+							this.delegatedIDs.push(d);
+						}
+					});
+					this.socket.on("danjaye_host_status",(s)=>{
+						let idx = this.flags.indexOf("local_player_control");
+						if(s) {
+							if(idx==-1) {
+								this.flags.push("local_player_control");
+							}
+							this.notif("Now hosting a game",15,"lightgreen","darkgreen");
+						}
+						else {
+							if(idx>=0) {
+								this.flags.splice(idx,1);
+								this.notif("No longer hosting a game",5,"lightgray","gray");
+							}
+						}
+					});
+					this.socket.on("danjaye_request_fire",(d)=>{
+						if(this.flags.includes("local_player_control")) {
+							this.tanks.find((t)=>t.id==this.delegatedIDs[d.id][0]).barrels.filter((b)=>b.firePriority==d.barrel).forEach((b)=>{b.fire();});
+						}
+					});
+					this.socket.on("disconnect",()=>{
+						this.notif("disconnected from server",7,"indianred");
+					});
+					this.socket.on("connect",()=>{
+						this.notif("connected to server",7);
+					});
+					this.socket.on("connect_error",(e)=>{
+						this.notif("can't connect to server: "+e,7,"indianred");
+					});
+					this.socket.on("danjaye_notif",(n)=>this.notif(n.text,n.timeOnScreen,n.background,n.textColor));
+					this.socket.on("danjaye_error",(e)=>this.notif(e,undefined,"indianred"));
+					this.socket.on("danjaye_game_fire",(d)=>{
+						for(let [k,v] of Object.entries(d)){
+							this[k](...v);
+						}
+					});
+					this.socket.on("danjaye_fix_pos",(c)=>{
+						if(!this.localPlayer) return;
+						this.localPlayer.x = c.x;
+						this.localPlayer.y = c.y;
+					});
+				}
+				
+				disconnect() {
+					this.flags=[];
+					this.maxBots=0;
+					this.socket.destroy();
+					this.socket.emit('danjaye_leave',true);
+					this.connected=false;
+					this.tanks=[];
 				}
 				
 				addTank(tank) {
@@ -2996,14 +3129,28 @@
 						}
 					}
 					for(let tank of this.tanks) {
+						tank.deathAnimationCheck();
 						if(tank.flags.includes("local_player_control")/*||(tank.owner&&tank.owner.flags.includes("local_player_control"))*/) {
 							if(!tank.flags.includes("local_player")) tank.behaviorTick();
 							tank.tick();
 							tank.damageTick();
 						}
+						else {
+							if(this.flags.includes("local_player_control")&&tank.hp>0) {
+								tank.collide();
+								tank.damageTick();
+							}
+							if(this.flags.includes("local_player_control")&&tank.hp==0&&!tank.isDead) { this.socket.emit("danjaye_delete",tank.id);tank.isDead=true; }
+						}
 					}
 					if(this.players.length>0&&new Date().getTime()>this.lastPayloadTime+this.netSendingSpeed) {
 						this.socket.emit("danjaye_data",this.constructPayload());
+						this.socket.emit("danjaye_mouse",{
+							x: this.x - this.canvas.width/2 + this.mouse.x,
+							y: this.canvas.height/2 + this.y - this.mouse.y,
+							pressed: this.mouse.pressed,
+							rightMousePressed: this.rightMousePressed
+						});
 						this.lastPayloadTime=new Date().getTime();
 					}
 					this.delta = new Date().getTime() - this.lastFrameTime;
@@ -3035,6 +3182,7 @@
 						});
 						t.team=tank.team;
 						t.messages=tank.messages;
+						if(tank.class) t.class=tank.class.name;
 						t.maxhp=tank.maxhp;
 						t.hp=tank.hp;
 						t.name=tank.name;
@@ -3122,6 +3270,7 @@
 					for(let tank of this.tanks) {
 						if(tank.x-tank.size*1.8<this.x+document.body.clientWidth/2&&tank.x+tank.size*1.8>this.x-document.body.clientWidth/2&&tank.y-tank.size*1.8<this.y+document.body.clientHeight/2&&tank.y+tank.size*1.8>this.y-document.body.clientHeight/2) {
 							this.ctx.beginPath();
+							if(!tank.flags.includes("local_player_control")) tank.deathAnimationCheck();
 							tank.render(this.ctx);
 						}
 					}
@@ -3389,7 +3538,7 @@
 			}
 			
 			const canvas = document.body.children[0];
-			const game = new DanjayeGame(canvas,"https://tanks.danjaye.lol");
+			const game = new DanjayeGame(canvas);
 			function rs() {
 				canvas.width = document.body.clientWidth;
 				canvas.height = document.body.clientHeight;
@@ -3535,9 +3684,10 @@
 						let z=game.modes[hmd.filter((z)=>z.id.startsWith("game.mode.")&&z.value==true).map((z)=>z.id.replace("game.mode.",""))[0]];
 						if(z&&z!=game.mode) game.setMode(z);
 						this.game.notif("sending data to server...",3,"lightgray","gray");
+						this.showSplash();
 						this.game.socket.once("danjaye_host_status",(s)=>{
 							if(s==true) {
-								this.showSplash();
+								//this.showSplash();
 							}
 						});
 						this.game.socket.emit("danjaye_host_status",true);
@@ -3711,6 +3861,7 @@
 					this.bruh.style.display="";
 					let bruhhh = this.findCurrentlyShowingSus();
 					let sus = this.findSus(name);
+					sussy.disabled = name != "splash";
 					if(name=="mods"){
 						let mz=document.getElementById("modsholder-container");
 						this.game.refreshModsCache();
@@ -3758,6 +3909,7 @@
 				}
 				
 				hide() {
+					sussy.disabled=true;
 					this.bruh.style.display="none";
 				}
 				
