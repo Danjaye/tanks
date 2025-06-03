@@ -9,3 +9,5 @@ To-do:
 - Make faster for devices
 - Other optimizations
 - Finish dynamic throttling and other measures to stop packet loss
+
+Join https://discord.gg/WV5Ds78kVd for chatting
